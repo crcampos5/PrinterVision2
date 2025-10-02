@@ -5,18 +5,20 @@ from pathlib import Path
 
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGraphicsScene
-
+from PySide6.QtCore import QObject, Signal
 from controllers.detection import detect_centroids, draw_centroids_overlay
-from models.scan_table_model import PixmapSource, ScanTableModel
+from models.scan_table_model import ScanTableModel
 from utils.file_manager import load_reference_image
 from views.scene_items import ScanTableItem
 
 
-class ScanTableController:
+class ScanTableController(QObject):
     """High level controller coordinating the scan table background."""
+    state_changed = Signal()
 
-    def __init__(self, model: ScanTableModel) -> None:
-        self._model = model
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._model = ScanTableModel()
         self._scene: QGraphicsScene | None = None
         self._item = ScanTableItem()
         # Sync the scene item with any pre-loaded background.
@@ -52,6 +54,7 @@ class ScanTableController:
         self._item.set_background_pixmap(pixmap)
         if self._scene is not None and self._item.scene() is None:
             self._scene.addItem(self._item)
+        self.state_changed.emit()
         return True
 
     def clear_background(self) -> None:
@@ -61,6 +64,7 @@ class ScanTableController:
         current_scene = self._item.scene()
         if current_scene is not None:
             current_scene.removeItem(self._item)
+        self.state_changed.emit()
 
     def refresh(self) -> None:
         """Resynchronise the scene item with the current model state."""

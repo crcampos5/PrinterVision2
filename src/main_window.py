@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 
 from controllers.scan_table_controller import ScanTableController
@@ -27,28 +27,38 @@ class MainWindow(QMainWindow):
         self.viewer = EditorViewer(self)
         self.setCentralWidget(self.viewer)
 
-        self.model_scan_table = ScanTableModel()
-        self.ctrl_scan_table = ScanTableController(self.model_scan_table)
+        
+        self.ctrl_scan_table = ScanTableController(self)
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
-        self.toolbar = MainToolBar(self, self.ctrl_scan_table)
-
+        self.toolbar = MainToolBar(self, self.ctrl_scan_table)        
         
-        
-        
+        self.ctrl_scan_table.attach_to_scene(self.viewer.scene())
         self.addToolBar(self.toolbar)
 
-
+        self.ctrl_scan_table.state_changed.connect(self._update_actions_state)
 
 
         self._update_actions_state()
         self._update_status()
 
+    
+    def _refresh_view(self) -> None:
+        # Sincroniza el item con el modelo por si cambió el pixmap
+        self.ctrl_scan_table.refresh()
+        # Ajusta el encuadre al fondo cargado
+        self.viewer.fitInView(self.ctrl_scan_table.item, Qt.KeepAspectRatio)
+
 
     def _update_actions_state(self) -> None:
-        self.toolbar.load_tif_action.setEnabled(self.document.has_reference)
-        self.toolbar.save_action.setEnabled(self.document.has_output)
+        """Actualiza el estado de los botones del toolbar según el estado actual."""
+        has_bg = self.ctrl_scan_table._model.has_background()
+        has_output = bool(self.document and self.document.has_output)
+
+        self.toolbar.load_tif_action.setEnabled(has_bg)
+        self.toolbar.save_action.setEnabled(has_output)
+
 
     def _update_status(self) -> None:
         # Compose a short status message describing the current session.

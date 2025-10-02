@@ -18,7 +18,7 @@ class MainToolBar(QToolBar):
 
     def __init__(self, main_window: MainWindow, scan_table_ctrl: ScanTableController) -> None:
         super().__init__("Main Toolbar", main_window)
-
+        self.main_window = main_window
         self.scan_table_ctrl = scan_table_ctrl
         
         self.setMovable(False)
@@ -56,14 +56,14 @@ class MainToolBar(QToolBar):
                 "No se pudo cargar la tabla de escaneo o no se detectaron objetos.",
             )
             return
-
-        self._refresh_view()
-        self._update_actions_state()
-        self._update_status()
+        self.scan_table_ctrl.attach_to_scene(self.main_window.viewer.scene())
+        self.main_window._refresh_view()
+        self.main_window._update_actions_state()
+        self.main_window._update_status()
 
     
     def load_image_item(self) -> None:
-        if not self.document.has_reference:
+        if not self.scan_table_ctrl._model.has_background():
             QMessageBox.information(self, "Referencia requerida", "Carga una referencia primero.")
             return
         file_path, _ = QFileDialog.getOpenFileName(

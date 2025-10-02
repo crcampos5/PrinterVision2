@@ -187,18 +187,6 @@ class ImageDocument:
             inkset=inkset,
         )
 
-
-
-
-    def _recompute_mm_per_pixel(self) -> None:
-        if self.reference_image is None:
-            self.mm_per_pixel_x = None
-            self.mm_per_pixel_y = None
-            return
-        height_px, width_px = self.reference_image.shape[:2]
-        self.mm_per_pixel_x = self.workspace_width_mm / width_px if width_px else None
-        self.mm_per_pixel_y = self.workspace_height_mm / height_px if height_px else None
-
     def _scaled_tile(self) -> Optional[np.ndarray]:
         """En modo tile fijo, devuelve el tile sin redimensionar."""
         if self.tile_image is None:
