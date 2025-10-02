@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QTransform
 from PySide6.QtWidgets import QGraphicsScene
 
 from models.image_model import ImageModel
@@ -23,6 +23,8 @@ class ImageController(QObject):
         self._scene: QGraphicsScene | None = None
 
         self._item.setZValue(1.0)
+        self._target_mmpp_x: float | None = None
+        self._target_mmpp_y: float | None = None
         self._sync_item_from_model()
 
     @property
@@ -70,3 +72,30 @@ class ImageController(QObject):
             self._item.set_image_pixmap(None)
             return
         self._item.set_image_pixmap(QPixmap.fromImage(qimg))
+        self._apply_physical_scale()
+
+    def set_target_mm_per_pixel(self, mmpp_x: float | None, mmpp_y: float | None) -> None:
+        self._target_mmpp_x = mmpp_x
+        self._target_mmpp_y = mmpp_y
+        self._apply_physical_scale()
+    
+    def _apply_physical_scale(self) -> None:
+        """Escala no uniforme para que la imagen respete mm por píxel del scan_table."""
+        if self._target_mmpp_x is None or self._target_mmpp_y is None:
+            return
+        qimg = self._model.qimage
+        if qimg is None or qimg.isNull():
+            return
+        w_px, h_px = qimg.width(), qimg.height()
+        width_mm, height_mm = self._model.width_mm, self._model.height_mm
+        if not width_mm or not height_mm or w_px <= 0 or h_px <= 0:
+            return
+
+        mmpp_img_x = width_mm / float(w_px)
+        mmpp_img_y = height_mm / float(h_px)
+
+        sx = mmpp_img_x / float(self._target_mmpp_x)
+        sy = mmpp_img_y / float(self._target_mmpp_y)
+
+        # Reemplaza cualquier transform previa con la escala física
+        self._item.setTransform(QTransform().scale(sx, sy), False)

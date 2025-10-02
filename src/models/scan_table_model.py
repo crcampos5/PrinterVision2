@@ -9,7 +9,7 @@ import numpy as np
 from PySide6.QtGui import QPixmap
 
 from controllers.detection import detect_centroids
-from utils.file_manager import load_reference_image
+from utils.file_manager import load_scan_table
 
 
 class ScanTableModel:
@@ -47,12 +47,12 @@ class ScanTableModel:
         return self.scan_table_pixmap is not None and not self.scan_table_pixmap.isNull()
 
     def load_background(self, path: Path) -> bool:
-        data = load_reference_image(path)
-        if data is None or data.pixels is None:
+        data = load_scan_table(path)
+        if data is None or data is None:
             self.clear_background()
             return False
 
-        image = data.pixels
+        image = data
         _, centroids = detect_centroids(image, self.min_area)
 
         self.scan_table_path = Path(path)

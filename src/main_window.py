@@ -51,6 +51,11 @@ class MainWindow(QMainWindow):
     def _refresh_view(self) -> None:
         # Sincroniza el item con el modelo por si cambió el pixmap
         self.ctrl_scan_table.refresh()
+
+        mmpp_x = self.ctrl_scan_table._model.mm_per_pixel_x
+        mmpp_y = self.ctrl_scan_table._model.mm_per_pixel_y
+        self.ctrl_image.set_target_mm_per_pixel(mmpp_x, mmpp_y)
+
         self.ctrl_image.refresh()
         # Ajusta el encuadre al fondo cargado
         self.viewer.fitInView(self.ctrl_scan_table.item, Qt.KeepAspectRatio)

@@ -8,7 +8,6 @@ from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QObject, Signal
 from controllers.detection import detect_centroids, draw_centroids_overlay
 from models.scan_table_model import ScanTableModel
-from utils.file_manager import load_reference_image
 from views.scene_items import ScanTableItem
 
 
@@ -82,23 +81,4 @@ class ScanTableController(QObject):
         if self._scene is not None and self._item.scene() is None:
             self._scene.addItem(self._item)
 
-    def load_reference(self, path: Path) -> bool:
-        """Load a reference image and detect centroids."""
-        data = load_reference_image(path)
-        if data is None:
-            return False
-        image = data.pixels
-        _, centroids = detect_centroids(image, self.min_area)
-        if not centroids:
-            return False
-        self.reference_path = path
-        self.reference_image = image
-        self.centroids = centroids
-        self.reference_overlay = draw_centroids_overlay(image, centroids)
-        self.tile_path = None
-        self.tile_image = None  # stored as HxWxC (C=1 or 3)
-        self.tile_mm_width = None
-        self.tile_mm_height = None
-        self.output_image = None  # canvas same size as reference
-        self._recompute_mm_per_pixel()
-        return True
+    

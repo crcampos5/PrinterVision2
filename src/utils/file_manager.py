@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING, Any, Dict
+from typing import Optional, TYPE_CHECKING, Any, Dict, Tuple
 
+import cv2
 import numpy as np
 import tifffile
 
@@ -20,14 +21,31 @@ if TYPE_CHECKING:  # pragma: no cover
     from .io import ImageData
 
 
-def load_reference_image(path: Path) -> Optional["ImageData"]:
-    return load_image_data(path)
+def load_scan_table(path: Path) -> np.ndarray:
+    if not path.exists():
+        return None
 
+    try:       
+        image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+        if image is not None and image.ndim == 3 and image.shape[2] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    except Exception:
+        return None
 
-def load_tile_image(path: Path) -> Optional["ImageData"]:
-    return load_image_data(path)
+    if image is None:
+        return None
 
+    array = np.asarray(image)
 
+    # Si viene en 2D (gris), opcionalmente añade eje de canal para coherencia (H, W, 1).
+    # Esto NO cambia la información ni el dtype.
+    if array.ndim == 2:
+        array = array[..., np.newaxis]
+
+    
+
+    return array
+    
 def load_tif(path: Path) -> Optional[Dict[str, Any]]:
     """
     Carga un TIF y retorna un dict con:
@@ -120,3 +138,117 @@ def load_tif(path: Path) -> Optional[Dict[str, Any]]:
         "icc_profile": icc,
         "ink_names": ink_names,
     }
+
+def to_rgba8_preview(
+    pixels: np.ndarray,
+    photometric: Optional[str],
+    cmyk_order: Optional[Tuple[int, int, int, int]],
+    alpha_index: Optional[int],
+) -> Optional[np.ndarray]:
+    """
+    Convierte un arreglo de imagen (cualquier dtype) a RGBA8 para previsualización.
+    - Preserva alpha si alpha_index es válido.
+    - Soporta CMYK (photometric='separated') con orden dado por cmyk_order.
+    - No modifica `pixels`; retorna un nuevo np.ndarray (H, W, 4) dtype=uint8.
+    """
+    if pixels is None or pixels.size == 0:
+        return None
+    arr = np.asarray(pixels)
+    if arr.ndim == 2:
+        # Gris → RGB + A=255
+        g = _to_u8(arr)
+        a = np.full_like(g, 255, dtype=np.uint8)
+        return np.ascontiguousarray(np.dstack([g, g, g, a]))
+
+    if arr.ndim != 3:
+        return None
+
+    h, w, c = arr.shape
+    # Alpha
+    has_alpha = alpha_index is not None and 0 <= alpha_index < c
+    A = _to_u8(arr[..., alpha_index]) if has_alpha else np.full((h, w), 255, dtype=np.uint8)
+
+    # CMYK → RGB
+    if (photometric or "").lower() == "separated" and c >= 4:
+        order = cmyk_order if cmyk_order else (0, 1, 2, 3)
+        C = _to_u8(arr[..., order[0]]).astype(np.float32) / 255.0
+        M = _to_u8(arr[..., order[1]]).astype(np.float32) / 255.0
+        Y = _to_u8(arr[..., order[2]]).astype(np.float32) / 255.0
+        K = _to_u8(arr[..., order[3]]).astype(np.float32) / 255.0
+        R = (1.0 - np.minimum(1.0, C + K))
+        G = (1.0 - np.minimum(1.0, M + K))
+        B = (1.0 - np.minimum(1.0, Y + K))
+        R8 = (R * 255.0).round().astype(np.uint8)
+        G8 = (G * 255.0).round().astype(np.uint8)
+        B8 = (B * 255.0).round().astype(np.uint8)
+        return np.ascontiguousarray(np.dstack([R8, G8, B8, A]))
+
+    # RGB / RGBA / Gray+Alpha u otros
+    if c >= 3:
+        R = _to_u8(arr[..., 0])
+        G = _to_u8(arr[..., 1])
+        B = _to_u8(arr[..., 2])
+        # Si no se indicó alpha_index pero hay 4º canal, úsalo como alpha de cortesía
+        if not has_alpha and c >= 4:
+            A = _to_u8(arr[..., 3])
+        return np.ascontiguousarray(np.dstack([R, G, B, A]))
+
+    if c == 2:
+        # Asumimos [Gray, Alpha] si no se especifica
+        if has_alpha:
+            gray_chan = 1 - int(alpha_index == 0)  # si alpha es 0, gris es 1; si alpha es 1, gris es 0
+        else:
+            gray_chan = 0
+        GY = _to_u8(arr[..., gray_chan])
+        return np.ascontiguousarray(np.dstack([GY, GY, GY, A]))
+
+    if c == 1:
+        GY = _to_u8(arr[..., 0])
+        return np.ascontiguousarray(np.dstack([GY, GY, GY, A]))
+
+    return None
+
+
+# --- Helpers internos mínimos (privados al módulo) ---
+
+def _to_u8(ch: np.ndarray) -> np.ndarray:
+    """
+    Convierte un canal 2D a uint8 de forma robusta:
+    - float: 0..1 → *255; >255 → clip a 0..65535 y /257; resto → normaliza min-max.
+    - uint16: /257
+    - uint8: retorna igual
+    - otros enteros: normaliza min-max
+    """
+    ch = np.asarray(ch)
+    if ch.dtype == np.uint8:
+        return ch
+    if ch.dtype == np.uint16:
+        return (ch / 257.0).round().astype(np.uint8)
+    if ch.dtype.kind == "f":
+        x = np.nan_to_num(ch.astype(np.float32, copy=False))
+        if x.size == 0:
+            return np.zeros_like(x, dtype=np.uint8)
+        xmax = float(np.max(x))
+        xmin = float(np.min(x))
+        if xmax <= 1.05 and xmin >= 0.0:
+            x = np.clip(x, 0.0, 1.0) * 255.0
+            return x.round().astype(np.uint8)
+        if xmax > 255.0:
+            x = np.clip(x, 0.0, 65535.0) / 257.0
+            return x.round().astype(np.uint8)
+        rng = xmax - xmin
+        if rng <= 0.0:
+            return np.zeros_like(x, dtype=np.uint8)
+        x = (x - xmin) * (255.0 / rng)
+        return x.round().astype(np.uint8)
+    # otros enteros (incl. int16, int32, uint32…): normaliza min-max
+    x = ch.astype(np.float32)
+    if x.size == 0:
+        return np.zeros_like(x, dtype=np.uint8)
+    xmax = float(np.max(x))
+    xmin = float(np.min(x))
+    rng = xmax - xmin
+    if rng <= 0.0:
+        return np.zeros_like(x, dtype=np.uint8)
+    x = (x - xmin) * (255.0 / rng)
+    return x.round().astype(np.uint8)

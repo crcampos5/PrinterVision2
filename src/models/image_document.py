@@ -10,7 +10,6 @@ import numpy as np
 
 from controllers.detection import Centroid, detect_centroids, draw_centroids_overlay
 from controllers.placement import place_tile_on_centroids
-from utils.file_manager import load_reference_image, load_tile_image
 from utils.io import save_image_tif
 
 
@@ -53,50 +52,6 @@ class ImageDocument:
     @property
     def has_output(self) -> bool:
         return self.output_image is not None
-
-    def load_reference(self, path: Path) -> bool:
-        """Load a reference image and detect centroids."""
-        data = load_reference_image(path)
-        if data is None:
-            return False
-        image = data.pixels
-        _, centroids = detect_centroids(image, self.min_area)
-        if not centroids:
-            return False
-        self.reference_path = path
-        self.reference_image = image
-        self.centroids = centroids
-        self.reference_overlay = draw_centroids_overlay(image, centroids)
-        self.tile_path = None
-        self.tile_image = None  # stored as HxWxC (C=1 or 3)
-        self.tile_mm_width = None
-        self.tile_mm_height = None
-        self.output_image = None  # canvas same size as reference
-        self._recompute_mm_per_pixel()
-        return True
-
-    def load_tile(self, path: Path) -> bool:
-        """Load a TIF tile and build the placement result respecting physical size."""
-        if self.reference_image is None or not self.centroids:
-            return False
-        data = load_tile_image(path)
-        if data is None:
-            return False
-        self.tile_path = path
-        self.tile_image = data.pixels
-        self.tile_mm_width = data.width_mm
-        self.tile_mm_height = data.height_mm
-        self.tile_photometric = data.photometric
-        self.tile_cmyk_order = data.cmyk_order
-        self.tile_alpha_index = data.alpha_index
-        self.tile_icc_profile = getattr(data, "icc_profile", None)
-        self.tile_ink_names = getattr(data, "ink_names", None)
-        # Fall back to pixel-derived size if metadata is missing.
-        if self.tile_mm_width is None and self.mm_per_pixel_x is not None:
-            self.tile_mm_width = self.tile_image.shape[1] * self.mm_per_pixel_x
-        if self.tile_mm_height is None and self.mm_per_pixel_y is not None:
-            self.tile_mm_height = self.tile_image.shape[0] * self.mm_per_pixel_y
-        return self._generate_output()
 
     def rebuild_output(self) -> bool:
         """Recalculate the output using current settings."""
