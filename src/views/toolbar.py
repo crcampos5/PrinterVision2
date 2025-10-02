@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pathlib import Path
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
+from controllers.image_controller import ImageController
 from controllers.scan_table_controller import ScanTableController
 from views.workspace_dialog import WorkspaceDialog
 
@@ -16,11 +17,13 @@ if TYPE_CHECKING:  # pragma: no cover - hints only
 class MainToolBar(QToolBar):
     """Toolbar housing the primary window actions."""
 
-    def __init__(self, main_window: MainWindow, scan_table_ctrl: ScanTableController) -> None:
+    def __init__(self, main_window: MainWindow, 
+                 scan_table_ctrl: ScanTableController,
+                 image_ctrl: ImageController) -> None:
         super().__init__("Main Toolbar", main_window)
         self.main_window = main_window
         self.scan_table_ctrl = scan_table_ctrl
-        
+        self.image_ctrl = image_ctrl
         self.setMovable(False)
 
         self.settings_action = QAction("Parametros", self)
@@ -75,13 +78,13 @@ class MainToolBar(QToolBar):
         if not file_path:
             return
         path = Path(file_path)
-        if not self.document.load_tile(path):
+        if not self.image_ctrl.load_image(path):
             QMessageBox.warning(self, "Error", "No se pudo cargar el mosaico .tif seleccionado.")
             return
 
-        self._refresh_view()
-        self._update_actions_state()
-        self._update_status()
+        self.main_window._refresh_view()
+        self.main_window._update_actions_state()
+        self.main_window._update_status()
 
     
     def configure_workspace(self) -> None:
