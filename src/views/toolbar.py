@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pathlib import Path
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
+from controllers.scan_table_controller import ScanTableController
 from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
@@ -15,8 +16,11 @@ if TYPE_CHECKING:  # pragma: no cover - hints only
 class MainToolBar(QToolBar):
     """Toolbar housing the primary window actions."""
 
-    def __init__(self, main_window: "MainWindow") -> None:
+    def __init__(self, main_window: MainWindow, scan_table_ctrl: ScanTableController) -> None:
         super().__init__("Main Toolbar", main_window)
+
+        self.scan_table_ctrl = scan_table_ctrl
+        
         self.setMovable(False)
 
         self.settings_action = QAction("Parametros", self)
@@ -45,7 +49,7 @@ class MainToolBar(QToolBar):
         if not file_path:
             return
         path = Path(file_path)
-        if not self.document.load_reference(path):
+        if not self.scan_table_ctrl.load_background(path):
             QMessageBox.warning(
                 self,
                 "Error",

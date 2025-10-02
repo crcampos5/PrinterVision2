@@ -7,7 +7,9 @@ from typing import Optional
 
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 
+from controllers.scan_table_controller import ScanTableController
 from models.image_document import ImageDocument
+from models.scan_table_model import ScanTableModel
 from utils.qt import numpy_to_qpixmap
 from views.editor_viewer import EditorViewer
 from views.toolbar import MainToolBar
@@ -25,10 +27,21 @@ class MainWindow(QMainWindow):
         self.viewer = EditorViewer(self)
         self.setCentralWidget(self.viewer)
 
+        self.model_scan_table = ScanTableModel()
+        self.ctrl_scan_table = ScanTableController(self.model_scan_table)
+
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
-        self.toolbar = MainToolBar(self)
+        self.toolbar = MainToolBar(self, self.ctrl_scan_table)
+
+        
+        
+        
         self.addToolBar(self.toolbar)
+
+
+
+
         self._update_actions_state()
         self._update_status()
 
