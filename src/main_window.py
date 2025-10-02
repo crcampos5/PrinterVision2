@@ -37,10 +37,12 @@ class MainWindow(QMainWindow):
         self.toolbar = MainToolBar(self, self.ctrl_scan_table, self.ctrl_image)        
         
         self.ctrl_scan_table.attach_to_scene(self.viewer.scene())
+        self.ctrl_image.attach_to_scene(self.viewer.scene()) 
+        
         self.addToolBar(self.toolbar)
 
         self.ctrl_scan_table.state_changed.connect(self._update_actions_state)
-
+        self.ctrl_image.state_changed.connect(self._update_actions_state)
 
         self._update_actions_state()
         self._update_status()
@@ -49,6 +51,7 @@ class MainWindow(QMainWindow):
     def _refresh_view(self) -> None:
         # Sincroniza el item con el modelo por si cambió el pixmap
         self.ctrl_scan_table.refresh()
+        self.ctrl_image.refresh()
         # Ajusta el encuadre al fondo cargado
         self.viewer.fitInView(self.ctrl_scan_table.item, Qt.KeepAspectRatio)
 

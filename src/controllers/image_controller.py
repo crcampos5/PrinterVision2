@@ -21,6 +21,8 @@ class ImageController(QObject):
         self._model = ImageModel()
         self._item = ImageItem()
         self._scene: QGraphicsScene | None = None
+
+        self._item.setZValue(1.0)
         self._sync_item_from_model()
 
     @property
