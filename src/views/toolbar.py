@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
+from pathlib import Path
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QToolBar
+from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
+from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from ..main_window import MainWindow
@@ -19,17 +20,96 @@ class MainToolBar(QToolBar):
         self.setMovable(False)
 
         self.settings_action = QAction("Parametros", self)
-        self.settings_action.triggered.connect(main_window.configure_workspace)
+        self.settings_action.triggered.connect(self.configure_workspace)
         self.addAction(self.settings_action)
 
-        self.open_action = QAction("Abrir referencia", self)
-        self.open_action.triggered.connect(main_window.open_image)
+        self.open_action = QAction("Cargar Tabla Escaneo", self)
+        self.open_action.triggered.connect(self.open_scan_table)
         self.addAction(self.open_action)
 
-        self.load_tif_action = QAction("Cargar .tif", self)
-        self.load_tif_action.triggered.connect(main_window.load_tif)
+        self.load_tif_action = QAction("Cargar Imagen", self)
+        self.load_tif_action.triggered.connect(self.load_image_item)
         self.addAction(self.load_tif_action)
 
         self.save_action = QAction("Guardar resultado", self)
-        self.save_action.triggered.connect(main_window.save_image)
+        self.save_action.triggered.connect(self.save_result)
         self.addAction(self.save_action)
+
+    def open_scan_table(self) -> None:
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Seleccionar imagen de tabla de escaneo",
+            str(Path.cwd()),
+            "Imagenes JPG (*.jpg *.jpeg);;Todos los archivos (*.*)",
+        )
+        if not file_path:
+            return
+        path = Path(file_path)
+        if not self.document.load_reference(path):
+            QMessageBox.warning(
+                self,
+                "Error",
+                "No se pudo cargar la tabla de escaneo o no se detectaron objetos.",
+            )
+            return
+
+        self._refresh_view()
+        self._update_actions_state()
+        self._update_status()
+
+    
+    def load_image_item(self) -> None:
+        if not self.document.has_reference:
+            QMessageBox.information(self, "Referencia requerida", "Carga una referencia primero.")
+            return
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Seleccionar imagen TIF",
+            str(Path.cwd()),
+            "Imagenes TIF (*.tif *.TIF);;Todos los archivos (*.*)",
+        )
+        if not file_path:
+            return
+        path = Path(file_path)
+        if not self.document.load_tile(path):
+            QMessageBox.warning(self, "Error", "No se pudo cargar el mosaico .tif seleccionado.")
+            return
+
+        self._refresh_view()
+        self._update_actions_state()
+        self._update_status()
+
+    
+    def configure_workspace(self) -> None:
+        dialog = WorkspaceDialog(
+            self,
+            width_mm=self.document.workspace_width_mm,
+            height_mm=self.document.workspace_height_mm,
+        )
+        if dialog.exec() == QDialog.Accepted:
+            width_mm, height_mm = dialog.values()
+            self.document.update_workspace(width_mm, height_mm)
+            self._refresh_view()
+            self._update_actions_state()
+            self._update_status()
+
+    def save_result(self) -> None:
+        if not self.document.has_output:
+            QMessageBox.information(self, "Sin resultado", "Genera un resultado antes de guardar.")
+            return
+        default_name = "resultado.tif"
+        if self.document.tile_path is not None:
+            default_name = f"{self.document.tile_path.stem}_sobre_centroides.tif"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar imagen resultante",
+            str(Path.cwd() / default_name),
+            "Imagenes TIF (*.tif *.TIF)",
+        )
+        if not file_path:
+            return
+        path = Path(file_path)
+        if not self.document.save_output(path):
+            QMessageBox.warning(self, "Error", "No se pudo guardar la imagen resultante.")
+            return
+        self.statusBar().showMessage(f"Imagen guardada en: {path}")
