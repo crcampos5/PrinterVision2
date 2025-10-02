@@ -8,10 +8,10 @@ from typing import Optional
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QToolBar, QDialog
 
-from editor_tif.models.image_document import ImageDocument
-from editor_tif.utils.qt import numpy_to_qpixmap
-from editor_tif.views.image_viewer import ImageViewer
-from editor_tif.views.workspace_dialog import WorkspaceDialog
+from models.image_document import ImageDocument
+from utils.qt import numpy_to_qpixmap
+from views.image_viewer import ImageViewer
+from views.workspace_dialog import WorkspaceDialog
 
 
 class MainWindow(QMainWindow):
