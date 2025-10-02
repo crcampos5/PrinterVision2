@@ -5,14 +5,19 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from PySide6.QtWidgets import QApplication
+
 # Ensure the src/ directory is available for imports when invoking this script directly.
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from editor_tif.app import run
+from editor_tif.main_window import MainWindow
+
 
 if __name__ == "__main__":
-    # Delegate execution to the real application entry point.
-    raise SystemExit(run())
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    raise SystemExit(app.exec())
