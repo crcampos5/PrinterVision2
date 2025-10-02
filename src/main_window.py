@@ -5,12 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QToolBar, QDialog
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 
 from models.image_document import ImageDocument
 from utils.qt import numpy_to_qpixmap
 from views.editor_viewer import EditorViewer
+from views.toolbar import MainToolBar
 from views.workspace_dialog import WorkspaceDialog
 
 
@@ -27,30 +27,10 @@ class MainWindow(QMainWindow):
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
-        self._create_toolbar()
+        self.toolbar = MainToolBar(self)
+        self.addToolBar(self.toolbar)
         self._update_actions_state()
         self._update_status()
-
-    def _create_toolbar(self) -> None:
-        toolbar = QToolBar("Main Toolbar", self)
-        toolbar.setMovable(False)
-        self.addToolBar(toolbar)
-
-        self.settings_action = QAction("Parametros", self)
-        self.settings_action.triggered.connect(self.configure_workspace)
-        toolbar.addAction(self.settings_action)
-
-        self.open_action = QAction("Abrir referencia", self)
-        self.open_action.triggered.connect(self.open_image)
-        toolbar.addAction(self.open_action)
-
-        self.load_tif_action = QAction("Cargar .tif", self)
-        self.load_tif_action.triggered.connect(self.load_tif)
-        toolbar.addAction(self.load_tif_action)
-
-        self.save_action = QAction("Guardar resultado", self)
-        self.save_action.triggered.connect(self.save_image)
-        toolbar.addAction(self.save_action)
 
     def configure_workspace(self) -> None:
         dialog = WorkspaceDialog(
@@ -149,8 +129,8 @@ class MainWindow(QMainWindow):
 
 
     def _update_actions_state(self) -> None:
-        self.load_tif_action.setEnabled(self.document.has_reference)
-        self.save_action.setEnabled(self.document.has_output)
+        self.toolbar.load_tif_action.setEnabled(self.document.has_reference)
+        self.toolbar.save_action.setEnabled(self.document.has_output)
 
     def _update_status(self) -> None:
         # Compose a short status message describing the current session.
