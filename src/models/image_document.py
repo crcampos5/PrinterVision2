@@ -10,7 +10,8 @@ import numpy as np
 
 from controllers.detection import Centroid, detect_centroids, draw_centroids_overlay
 from controllers.placement import place_tile_on_centroids
-from utils.io import ImageData, load_image_data, save_image_tif
+from utils.file_manager import load_reference_image, load_tile_image
+from utils.io import save_image_tif
 
 
 class ImageDocument:
@@ -55,7 +56,7 @@ class ImageDocument:
 
     def load_reference(self, path: Path) -> bool:
         """Load a reference image and detect centroids."""
-        data = load_image_data(path)
+        data = load_reference_image(path)
         if data is None:
             return False
         image = data.pixels
@@ -78,7 +79,7 @@ class ImageDocument:
         """Load a TIF tile and build the placement result respecting physical size."""
         if self.reference_image is None or not self.centroids:
             return False
-        data = load_image_data(path)
+        data = load_tile_image(path)
         if data is None:
             return False
         self.tile_path = path
