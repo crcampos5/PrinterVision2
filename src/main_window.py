@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QToolBar, Q
 
 from models.image_document import ImageDocument
 from utils.qt import numpy_to_qpixmap
-from views.image_viewer import ImageViewer
+from views.editor_viewer import EditorViewer
 from views.workspace_dialog import WorkspaceDialog
 
 
@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PrinterVision Editor")
         self.resize(1200, 800)
         # Central canvas that handles zooming, panning, and rotation.
-        self.viewer = ImageViewer(self)
+        self.viewer = EditorViewer(self)
         self.setCentralWidget(self.viewer)
 
         # Data model encapsulating reference, mosaic, and workspace state. 
