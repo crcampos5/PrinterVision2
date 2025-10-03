@@ -6,7 +6,7 @@ from pathlib import Path
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QObject, Signal
-from controllers.detection import detect_centroids, draw_centroids_overlay
+from utils.detection import detect_centroids, draw_centroids_overlay
 from models.scan_table_model import ScanTableModel
 from views.scene_items import ScanTableItem
 
@@ -69,6 +69,12 @@ class ScanTableController(QObject):
         """Resynchronise the scene item with the current model state."""
         self._sync_item_from_model()
 
+    def background_np(self):
+        return self._model.scan_table_image  # np.ndarray o None
+
+    def get_mm_per_pixel(self):
+        return (self._model.mm_per_pixel_x, self._model.mm_per_pixel_y)
+
     def _sync_item_from_model(self) -> None:
         pixmap = self._model.background_pixmap
         if pixmap is None or pixmap.isNull():
@@ -80,5 +86,7 @@ class ScanTableController(QObject):
         self._item.set_background_pixmap(pixmap)
         if self._scene is not None and self._item.scene() is None:
             self._scene.addItem(self._item)
+
+    
 
     

@@ -7,6 +7,7 @@ from typing import Optional
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 
+from controllers.contour_controller import ContourController
 from controllers.image_controller import ImageController
 from controllers.scan_table_controller import ScanTableController
 from models.image_document import ImageDocument
@@ -32,6 +33,7 @@ class MainWindow(QMainWindow):
         
         self.ctrl_scan_table = ScanTableController(self)
         self.ctrl_image = ImageController(self)
+        self.ctrl_contours = ContourController(self)
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
@@ -39,11 +41,16 @@ class MainWindow(QMainWindow):
         
         self.ctrl_scan_table.attach_to_scene(self.viewer.scene())
         self.ctrl_image.attach_to_scene(self.viewer.scene()) 
+        self.ctrl_contours.attach_to_scene(self.viewer.scene())
         
         self.addToolBar(self.toolbar)
 
         self.ctrl_scan_table.state_changed.connect(self._update_actions_state)
         self.ctrl_image.state_changed.connect(self._update_actions_state)
+
+        self.ctrl_scan_table.state_changed.connect(
+            lambda: self.ctrl_contours._on_scan_table_changed(self.ctrl_scan_table)
+        )
 
         self.selection = SelectionHandler(self.ctrl_scan_table.item, self.ctrl_image.item, self)
         self.selection.attach_to_scene(self.viewer.scene())

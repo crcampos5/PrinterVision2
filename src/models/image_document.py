@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 import cv2
 import numpy as np
 
-from controllers.detection import Centroid, detect_centroids, draw_centroids_overlay
+from utils.detection import Centroid, detect_centroids, draw_centroids_overlay
 from controllers.placement import place_tile_on_centroids
 from utils.io import save_image_tif
 
