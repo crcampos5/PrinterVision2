@@ -25,8 +25,13 @@ class EditorViewer(QGraphicsView):
 
     def wheelEvent(self, event: QWheelEvent) -> None:  # noqa: N802 (Qt naming)
         
-        zoom_factor = 1.25 if event.angleDelta().y() > 0 else 0.8
-        self.scale(zoom_factor, zoom_factor)
+        if event.modifiers() & Qt.ShiftModifier:
+            super().wheelEvent(event)
+            return
+
+        # Zoom normal sin Shift
+        zoom = 1.25 if event.angleDelta().y() > 0 else 0.8
+        self.scale(zoom, zoom)
         event.accept()
 
     def set_pixmap(self, pixmap: QPixmap) -> None:

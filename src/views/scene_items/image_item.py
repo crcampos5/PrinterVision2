@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QGraphicsPixmapItem
+from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsSceneWheelEvent
 
 
 class ImageItem(QGraphicsPixmapItem):
@@ -21,3 +22,15 @@ class ImageItem(QGraphicsPixmapItem):
             self.setPixmap(QPixmap())
             return
         self.setPixmap(pixmap)
+
+    def wheelEvent(self, event: QGraphicsSceneWheelEvent) -> None:
+        # Solo si está seleccionado y el usuario mantiene Shift
+        if self.isSelected() and (event.modifiers() & Qt.ShiftModifier):
+            br = self.boundingRect()
+            self.setTransformOriginPoint(br.center())
+            step = 5.0 if event.delta() > 0 else -5.0
+            self.setRotation(self.rotation() + step)
+            event.accept()
+            return
+        # En cualquier otro caso, comportamiento por defecto
+        super().wheelEvent(event)

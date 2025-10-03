@@ -38,16 +38,10 @@ class ImageController(QObject):
     def on_selection_changed(self) -> None:
         if self._item.isSelected():
             print("Imagen seleccionada")
+            print("Rotacion: ",self._item.rotation())
+            print("Posicion: ",self._item.pos().x, " ",self._item.pos().y )
         else:
             print("Imagen deseleccionada")
-
-    def rotate(self, angle_deg: float) -> None:
-        """Rota el ImageItem en grados (positivo = antihorario)."""
-        if not self._item:
-            return
-        br = self._item.boundingRect()
-        self._item.setTransformOriginPoint(br.center())
-        self._item.setRotation(self._item.rotation() + angle_deg)
 
     def attach_to_scene(self, scene: QGraphicsScene | None) -> None:
         if self._scene is scene:
