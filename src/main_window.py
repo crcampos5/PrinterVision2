@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 from controllers.contour_controller import ContourController
 from controllers.image_controller import ImageController
 from controllers.scan_table_controller import ScanTableController
+from controllers.plantilla_controller import PlantillaController
 from models.image_document import ImageDocument
 from models.scan_table_model import ScanTableModel
 from utils.qt import numpy_to_qpixmap
@@ -34,6 +35,7 @@ class MainWindow(QMainWindow):
         self.ctrl_scan_table = ScanTableController(self)
         self.ctrl_image = ImageController(self)
         self.ctrl_contours = ContourController(self)
+        self.ctrl_plantilla = PlantillaController(self.viewer._scene)
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
@@ -52,7 +54,7 @@ class MainWindow(QMainWindow):
             lambda: self.ctrl_contours._on_scan_table_changed(self.ctrl_scan_table)
         )
 
-        self.selection = SelectionHandler(self.ctrl_scan_table.item, self.ctrl_image.item, self)
+        self.selection = SelectionHandler(self.ctrl_plantilla,self.ctrl_scan_table.item, self.ctrl_image.item, self)
         self.selection.attach_to_scene(self.viewer.scene())
 
         #self.selection.selection_changed.connect(self.selection.on_selection_changed)

@@ -4,17 +4,19 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal, QEvent, Qt
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
+from controllers.plantilla_controller import PlantillaController
 from views.scene_items.contour_item import ContourItem
 from views.scene_items.image_item import ImageItem
 
 class SelectionHandler(QObject):
     selection_changed = Signal()
 
-    def __init__(self, scan_table_item: QGraphicsItem, image_item: QGraphicsItem, parent: QObject | None = None) -> None:
+    def __init__(self, ctrl_plantilla: PlantillaController, scan_table_item: QGraphicsItem, image_item: QGraphicsItem, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._scene: Optional[QGraphicsScene] = None
         self._bg = scan_table_item
         self._img = image_item
+        self._ctrl_plantilla = ctrl_plantilla
 
     def attach_to_scene(self, scene: QGraphicsScene | None) -> None:
         if self._scene is scene:
