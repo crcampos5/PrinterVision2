@@ -78,6 +78,7 @@ class ContourController(QObject):
         for c in cnts:
             # Se asume que ContourItem expone un helper de construcción desde cv-contour
             it = ContourItem.from_cv_contour(c)
+            it.controller = self
             it.setZValue(10.0)  # por encima del background
             items.append(it)
         return items
@@ -97,6 +98,20 @@ class ContourController(QObject):
                 if it.scene() is self._scene:
                     self._scene.removeItem(it)
         self._items.clear()
+
+    def on_selection_changed(self, item: ContourItem) -> None:
+        if item.isSelected():
+            rot = item.rotation()
+            p_parent = item.pos()           # pos en coordenadas del padre
+            p_scene  = item.scenePos()      # pos del (0,0) local en escena
+            c_scene  = item.mapToScene(item.boundingRect().center())  # centro en escena
+            angle = item.model.angle_o
+            print(f"Contorno")
+            print(f"Rotación: {rot:.2f}°")
+            print(f"Angulo: {angle:.2f}°")
+            print(f"Posición (parent): x={p_parent.x():.3f}, y={p_parent.y():.3f}")
+            print(f"Posición (scene 0,0): x={p_scene.x():.3f}, y={p_scene.y():.3f}")
+            print(f"Centro (scene): x={c_scene.x():.3f}, y={c_scene.y():.3f}")
 
     # --- API mínima pública ---
     def items(self) -> List[ContourItem]:

@@ -28,3 +28,6 @@ class PlantillaController:
         #plantilla.setPos(plantilla.pos() + delta)
 
         return plantilla
+    
+    def apply_template(self):
+        print("aplicando clonacion")

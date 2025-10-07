@@ -52,6 +52,11 @@ class MainToolBar(QToolBar):
         self.create_template_action.triggered.connect(self.create_template)
         self.addAction(self.create_template_action)
 
+        self.clone_template_action = QAction("Clonar Plantilla", self)
+        self.clone_template_action.setEnabled(False)
+        self.clone_template_action.triggered.connect(self.clone_template)
+        self.addAction(self.clone_template_action)
+
     def open_scan_table(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -135,4 +140,6 @@ class MainToolBar(QToolBar):
         ctn = self.sel_handler.selected_contours[0]
         img = self.sel_handler.selected_images[0]
         plantilla_item = self.plantilla_ctrl.create(img,ctn)
-        print("Funcion de creacion del template")
+    
+    def clone_template(self) -> None:
+        self.plantilla_ctrl.apply_template()

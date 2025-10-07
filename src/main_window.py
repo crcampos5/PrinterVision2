@@ -88,6 +88,12 @@ class MainWindow(QMainWindow):
 
         if state_sel == 1:
             self.toolbar.create_template_action.setEnabled(True)
+            return
+        if state_sel == 2:
+            self.toolbar.clone_template_action.setEnabled(True)
+            return
+        self.toolbar.clone_template_action.setEnabled(False)
+        self.toolbar.create_template_action.setEnabled(False)
 
 
     def _update_status(self) -> None:

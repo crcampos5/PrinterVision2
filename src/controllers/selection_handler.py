@@ -7,12 +7,13 @@ from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 from controllers.plantilla_controller import PlantillaController
 from views.scene_items.contour_item import ContourItem
 from views.scene_items.image_item import ImageItem
+from views.scene_items.plantilla_item import PlantillaItem
 
 class SelectionHandler(QObject):
     """ En las senales  
     0 Predeterminado
     1 Es la seleccion de un ImageItem y un ContourItem
-
+    2 Es seleccionado una plantilla
     """
     selection_changed = Signal(int)
 
@@ -27,6 +28,7 @@ class SelectionHandler(QObject):
         self._ctrl_plantilla = ctrl_plantilla
         self.selected_images: list[ImageItem] = []
         self.selected_contours: list[ContourItem] = []
+        self.selected_templates: list[PlantillaItem] = []
 
     def attach_to_scene(self, scene: QGraphicsScene | None) -> None:
         if self._scene is scene:
@@ -54,20 +56,25 @@ class SelectionHandler(QObject):
         # Clasificamos
         self.selected_images = [it for it in items if isinstance(it, ImageItem)]
         self.selected_contours = [it for it in items if isinstance(it, ContourItem)]
+        self.selected_templates = [it for it in items if isinstance(it, PlantillaItem)]
 
         n_img = len(self.selected_images)
         n_contour = len(self.selected_contours)
+        n_templates = len(self.selected_templates)
         estado_seleccion = 0
         # Diagnóstico
-        if n_img == 1 and n_contour == 0:
+        if n_img == 1 and n_contour == 0 and n_templates == 0:
             image = self.selected_images[0]
             image.on_selected()
-        elif n_img == 0 and n_contour == 1:
-            print(f"👉 Selección: SOLO un ContourItem ({self.selected_contours[0]})")
-        elif n_img == 1 and n_contour == 1:
+        elif n_img == 0 and n_contour == 1 and n_templates == 0:
+            ctn = self.selected_contours[0]
+            ctn.on_selected()
+        elif n_img == 1 and n_contour == 1 and n_templates == 0:
             estado_seleccion = 1
-        else:
-            print(f"👉 Selección múltiple (ImageItems={n_img}, Contours={n_contour}, Total={len(items)})")
+        elif  n_templates == 1:
+            estado_seleccion = 2
+        else: pass
+            #print(f"👉 Selección múltiple (ImageItems={n_img}, Contours={n_contour}, Total={len(items)})")
 
         self.selection_changed.emit(estado_seleccion)
         

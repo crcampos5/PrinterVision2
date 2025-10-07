@@ -12,6 +12,7 @@ class PlantillaItem(QGraphicsObject):
         super().__init__(parent)
         self.image_item = image_item
         self.contour_item = contour_item
+        self._show_bbox = False
 
         # Parentar hijos al contenedor
         self.image_item.setParentItem(self)
@@ -25,8 +26,15 @@ class PlantillaItem(QGraphicsObject):
 
         # Este contenedor solo se mueve (NO rotación)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsFocusable, False)
+
+        try:
+            # ancho 2 (ajusta si quieres más grueso)
+            self.contour_item.setPen(QPen(QColor(0, 200, 0), 3, Qt.SolidLine))
+        except Exception:
+            # Si no tiene setPen, lo ignoramos sin romper
+            pass
 
     # --- Geometría ---
     def boundingRect(self) -> QRectF:
@@ -35,13 +43,21 @@ class PlantillaItem(QGraphicsObject):
         return img_r.united(cnt_r)
 
     # --- Pintado (marco verde del bounding) ---
-    def paint(self, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
-        painter: QPainter = option.painter
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None) -> None:
+        if not self._show_bbox:
+            return
         pen = QPen(QColor(0, 200, 0))
         pen.setCosmetic(True)
+        pen.setStyle(Qt.DashLine)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawRect(self.boundingRect())
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            self._show_bbox = bool(value)
+            self.update()
+        return super().itemChange(change, value)
 
     # Bloquear rotación
     def setRotation(self, angle: float) -> None:
