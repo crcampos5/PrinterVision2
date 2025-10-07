@@ -16,7 +16,7 @@ class ContourItem(QGraphicsPolygonItem):
         )
         self.setAcceptedMouseButtons(Qt.LeftButton)
         # Estilo por defecto
-        self.setPen(QPen(Qt.green, 1, Qt.DashLine))
+        self.setPen(QPen(Qt.red, 4, Qt.SolidLine))
         self.setBrush(Qt.NoBrush)
 
     def sync_from_model(self) -> None:

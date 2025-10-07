@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         self.selection = SelectionHandler(self.ctrl_scan_table.item, self.ctrl_image.item, self)
         self.selection.attach_to_scene(self.viewer.scene())
 
-        self.selection.selection_changed.connect(self.ctrl_image.on_selection_changed)
+        #self.selection.selection_changed.connect(self.selection.on_selection_changed)
 
 
         self._update_actions_state()

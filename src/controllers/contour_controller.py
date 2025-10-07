@@ -68,12 +68,12 @@ class ContourController(QObject):
 
         # Asegurar objetos en blanco
         white = int(np.count_nonzero(thr)); black = thr.size - white
-        if white < black:
+        if white > black:
             thr = cv2.bitwise_not(thr)
 
         cnts, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = [c for c in cnts if cv2.contourArea(c) >= self._min_area]
-
+        print("detecto: ", len(cnts))
         items: List[ContourItem] = []
         for c in cnts:
             # Se asume que ContourItem expone un helper de construcción desde cv-contour

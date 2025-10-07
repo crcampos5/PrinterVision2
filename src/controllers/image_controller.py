@@ -20,9 +20,10 @@ class ImageController(QObject):
         super().__init__(parent)
         self._model = ImageModel()
         self._item = ImageItem()
+        self._item.controller = self
         self._scene: QGraphicsScene | None = None
 
-        self._item.setZValue(1.0)
+        self._item.setZValue(100.0)
         self._target_mmpp_x: float | None = None
         self._target_mmpp_y: float | None = None
         self._sync_item_from_model()
@@ -37,11 +38,16 @@ class ImageController(QObject):
     
     def on_selection_changed(self) -> None:
         if self._item.isSelected():
-            print("Imagen seleccionada")
-            print("Rotacion: ",self._item.rotation())
-            print("Posicion: ",self._item.pos().x, " ",self._item.pos().y )
-        else:
-            print("Imagen deseleccionada")
+            rot = self._item.rotation()
+            p_parent = self._item.pos()           # pos en coordenadas del padre
+            p_scene  = self._item.scenePos()      # pos del (0,0) local en escena
+            c_scene  = self._item.mapToScene(self._item.boundingRect().center())  # centro en escena
+
+            print(f"Rotación: {rot:.2f}°")
+            print(f"Posición (parent): x={p_parent.x():.3f}, y={p_parent.y():.3f}")
+            print(f"Posición (scene 0,0): x={p_scene.x():.3f}, y={p_scene.y():.3f}")
+            print(f"Centro (scene): x={c_scene.x():.3f}, y={c_scene.y():.3f}")
+
 
     def attach_to_scene(self, scene: QGraphicsScene | None) -> None:
         if self._scene is scene:

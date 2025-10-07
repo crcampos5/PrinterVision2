@@ -12,6 +12,7 @@ class ImageItem(QGraphicsPixmapItem):
 
     def __init__(self, pixmap: QPixmap | None = None) -> None:
         super().__init__()
+        self.controller = None
         if pixmap is not None:
             self.setPixmap(pixmap)
 
@@ -22,6 +23,9 @@ class ImageItem(QGraphicsPixmapItem):
             self.setPixmap(QPixmap())
             return
         self.setPixmap(pixmap)
+
+    def on_selected(self):
+        self.controller.on_selection_changed()
 
     def wheelEvent(self, event: QGraphicsSceneWheelEvent) -> None:
         # Solo si está seleccionado y el usuario mantiene Shift
