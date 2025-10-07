@@ -7,7 +7,9 @@ from pathlib import Path
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
 from controllers.image_controller import ImageController
+from controllers.plantilla_controller import PlantillaController
 from controllers.scan_table_controller import ScanTableController
+from controllers.selection_handler import SelectionHandler
 from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
@@ -19,11 +21,14 @@ class MainToolBar(QToolBar):
 
     def __init__(self, main_window: MainWindow, 
                  scan_table_ctrl: ScanTableController,
-                 image_ctrl: ImageController) -> None:
+                 image_ctrl: ImageController,
+                 plantilla_ctrl: PlantillaController) -> None:
         super().__init__("Main Toolbar", main_window)
         self.main_window = main_window
         self.scan_table_ctrl = scan_table_ctrl
         self.image_ctrl = image_ctrl
+        self.plantilla_ctrl = plantilla_ctrl
+        self.sel_handler: SelectionHandler = None
         self.setMovable(False)
 
         self.settings_action = QAction("Parametros", self)
@@ -41,6 +46,11 @@ class MainToolBar(QToolBar):
         self.save_action = QAction("Guardar resultado", self)
         self.save_action.triggered.connect(self.save_result)
         self.addAction(self.save_action)
+
+        self.create_template_action = QAction("Crear Plantilla", self)
+        self.create_template_action.setEnabled(False)
+        self.create_template_action.triggered.connect(self.create_template)
+        self.addAction(self.create_template_action)
 
     def open_scan_table(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
@@ -120,3 +130,9 @@ class MainToolBar(QToolBar):
             QMessageBox.warning(self, "Error", "No se pudo guardar la imagen resultante.")
             return
         self.statusBar().showMessage(f"Imagen guardada en: {path}")
+
+    def create_template(self) -> None:
+        ctn = self.sel_handler.selected_contours[0]
+        img = self.sel_handler.selected_images[0]
+        plantilla_item = self.plantilla_ctrl.create(img,ctn)
+        print("Funcion de creacion del template")

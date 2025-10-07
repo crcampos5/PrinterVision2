@@ -20,11 +20,11 @@ class PlantillaController:
         self._scene.addItem(plantilla)
 
         # centro del contorno en coords de escena
-        target_center: QPointF = contour_item.sceneBoundingRect().center()
+        #target_center: QPointF = contour_item.sceneBoundingRect().center()
         # centro actual del compuesto en coords de escena
-        current_center: QPointF = plantilla.mapToScene(plantilla.boundingRect().center())
+        #current_center: QPointF = plantilla.mapToScene(plantilla.boundingRect().center())
         # trasladar para alinear centro a centro
-        delta = target_center - current_center
-        plantilla.setPos(plantilla.pos() + delta)
+        #delta = target_center - current_center
+        #plantilla.setPos(plantilla.pos() + delta)
 
         return plantilla

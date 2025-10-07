@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()
-        self.toolbar = MainToolBar(self, self.ctrl_scan_table, self.ctrl_image)        
+        self.toolbar = MainToolBar(self, self.ctrl_scan_table, self.ctrl_image, self.ctrl_plantilla)        
         
         self.ctrl_scan_table.attach_to_scene(self.viewer.scene())
         self.ctrl_image.attach_to_scene(self.viewer.scene()) 
@@ -54,10 +54,11 @@ class MainWindow(QMainWindow):
             lambda: self.ctrl_contours._on_scan_table_changed(self.ctrl_scan_table)
         )
 
-        self.selection = SelectionHandler(self.ctrl_plantilla,self.ctrl_scan_table.item, self.ctrl_image.item, self)
+        self.selection = SelectionHandler(self, self.ctrl_plantilla, self.ctrl_scan_table.item, self.ctrl_image.item)
         self.selection.attach_to_scene(self.viewer.scene())
 
-        #self.selection.selection_changed.connect(self.selection.on_selection_changed)
+        self.selection.selection_changed.connect(self._update_actions_state)
+        self.toolbar.sel_handler = self.selection
 
 
         self._update_actions_state()
@@ -77,13 +78,16 @@ class MainWindow(QMainWindow):
         self.viewer.fitInView(self.ctrl_scan_table.item, Qt.KeepAspectRatio)
 
 
-    def _update_actions_state(self) -> None:
+    def _update_actions_state(self, state_sel: int | None = 0) -> None:
         """Actualiza el estado de los botones del toolbar según el estado actual."""
         has_bg = self.ctrl_scan_table._model.has_background()
         has_output = bool(self.document and self.document.has_output)
 
         self.toolbar.load_tif_action.setEnabled(has_bg)
         self.toolbar.save_action.setEnabled(has_output)
+
+        if state_sel == 1:
+            self.toolbar.create_template_action.setEnabled(True)
 
 
     def _update_status(self) -> None:
