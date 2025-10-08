@@ -35,7 +35,7 @@ class MainWindow(QMainWindow):
         self.ctrl_scan_table = ScanTableController(self)
         self.ctrl_image = ImageController(self)
         self.ctrl_contours = ContourController(self)
-        self.ctrl_plantilla = PlantillaController(self.viewer._scene)
+        self.ctrl_plantilla = PlantillaController(self.viewer._scene, self.ctrl_contours)
 
         # Data model encapsulating reference, mosaic, and workspace state. 
         self.document = ImageDocument()

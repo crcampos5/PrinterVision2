@@ -8,7 +8,7 @@ from models.contour_model import ContourModel
 class ContourItem(QGraphicsPolygonItem):
     """Item gráfico de un contorno."""
     def __init__(self, model: ContourModel) -> None:
-        super().__init__(model.scene_contour)
+        super().__init__(model.scene_box)
         self.model = model
         self.controller = None
         self.setFlags(
@@ -21,7 +21,7 @@ class ContourItem(QGraphicsPolygonItem):
         self.setBrush(Qt.NoBrush)
 
     def sync_from_model(self) -> None:
-        self.setPolygon(QPolygonF(self.model.scene_contour))
+        self.setPolygon(QPolygonF(self.model.scene_box))
 
     def on_selected(self):
         self.controller.on_selection_changed(self)
