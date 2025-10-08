@@ -32,6 +32,9 @@ class ImageModel:
         self.icc_profile: Optional[bytes] = None
         self.ink_names: Optional[List[str]] = None
 
+        self.scale_sx = None
+        self.scale_sy = None
+
     @property
     def image_path(self) -> Optional[Path]:
         return self._image_path

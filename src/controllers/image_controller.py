@@ -108,8 +108,8 @@ class ImageController(QObject):
         mmpp_img_x = width_mm / float(w_px)
         mmpp_img_y = height_mm / float(h_px)
 
-        sx = mmpp_img_x / float(self._target_mmpp_x)
-        sy = mmpp_img_y / float(self._target_mmpp_y)
+        self._model.scale_sx = mmpp_img_x / float(self._target_mmpp_x)
+        self._model.scale_sy = mmpp_img_y / float(self._target_mmpp_y)
 
         # Reemplaza cualquier transform previa con la escala física
-        self._item.setTransform(QTransform().scale(sx, sy), False)
+        self._item.setTransform(QTransform().scale(self._model.scale_sx, self._model.scale_sy), False)
