@@ -47,11 +47,19 @@ class MainWindow(QMainWindow):
         
         self.addToolBar(self.toolbar)
 
-        self.ctrl_scan_table.state_changed.connect(self._update_actions_state)
+        
         self.ctrl_image.state_changed.connect(self._update_actions_state)
 
+        self.ctrl_scan_table.state_changed.connect(self._update_actions_state)
+        self.ctrl_scan_table.state_changed.connect(self._refresh_view)
         self.ctrl_scan_table.state_changed.connect(
-            lambda: self.ctrl_contours._on_scan_table_changed(self.ctrl_scan_table)
+            lambda: self.ctrl_contours._on_scan_table_changed(self.ctrl_scan_table),
+        )
+        self.ctrl_scan_table.state_changed.connect(
+            lambda: self.ctrl_image._on_scan_table_changed(self.ctrl_scan_table)
+        )
+        self.ctrl_scan_table.state_changed.connect(
+            lambda: self.ctrl_plantilla._on_scan_table_changed(self.ctrl_scan_table)
         )
 
         self.selection = SelectionHandler(self, self.ctrl_plantilla, self.ctrl_scan_table.item, self.ctrl_image.item)
@@ -74,8 +82,16 @@ class MainWindow(QMainWindow):
         self.ctrl_image.set_target_mm_per_pixel(mmpp_x, mmpp_y)
 
         self.ctrl_image.refresh()
-        # Ajusta el encuadre al fondo cargado
-        self.viewer.fitInView(self.ctrl_scan_table.item, Qt.KeepAspectRatio)
+       # Reset de transformaciones de la vista para evitar acumulación de zoom
+        self.viewer.reset_view()
+
+        # Asegura que la escena tenga el rect del nuevo background
+        item_bg = self.ctrl_scan_table.item
+        if item_bg.pixmap() is not None and not item_bg.pixmap().isNull():
+            self.viewer.scene().setSceneRect(item_bg.sceneBoundingRect())
+
+            # Encadrar exactamente al nuevo fondo
+            self.viewer.fitInView(item_bg, Qt.KeepAspectRatio)
 
 
     def _update_actions_state(self, state_sel: int | None = 0) -> None:

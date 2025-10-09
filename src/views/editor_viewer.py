@@ -52,20 +52,3 @@ class EditorViewer(QGraphicsView):
         """Reset transformations applied to the view."""
         self.resetTransform()
     
-    def _refresh_view(self) -> None:
-        if self.document.has_output:
-            image = self.document.get_output_preview()
-            pix = numpy_to_qpixmap(
-                image,
-                photometric_hint=getattr(self.document, "tile_photometric", None),
-                cmyk_order=getattr(self.document, "tile_cmyk_order", None),
-                alpha_index=getattr(self.document, "tile_alpha_index", None),
-            )
-            self.set_pixmap(pix)
-        else:
-            image = self.document.get_reference_preview()
-            if image is not None:
-                # referencia (JPG) no necesita hints
-                self.set_pixmap(numpy_to_qpixmap(image))
-            else:
-                self.clear()

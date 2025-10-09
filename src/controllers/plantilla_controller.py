@@ -22,11 +22,11 @@ class PlantillaController:
         self.image_ctrl = image_ctrl
         self.angle_off_set = None
         self.pos_off_set = None
-        self._template_item: PlantillaItem | None = None
+        self.plantilla: PlantillaItem | None = None
 
     def create(self, image_item: ImageItem, contour_item: ContourItem) -> PlantillaItem:
-        plantilla = PlantillaItem(image_item=image_item, contour_item=contour_item)
-        self._scene.addItem(plantilla)
+        self.plantilla = PlantillaItem(image_item=image_item, contour_item=contour_item)
+        self._scene.addItem(self.plantilla)
 
         self.angle_off_set = 360 - contour_item.model.angle_o + image_item.rotation()
 
@@ -36,19 +36,18 @@ class PlantillaController:
         ctn_pos = QPointF(contour_item.model.cx_o,contour_item.model.cy_o)
 
         self.pos_off_set = scene_center - ctn_pos
-        self._template_item = plantilla
-
-        return plantilla
+        
+        return self.plantilla
 
     def apply_template(self):
         if self._scene is None:
             return
 
-        if self._template_item is None:
+        if self.plantilla is None:
             return
 
-        template_image = self._template_item.image_item
-        template_contour = self._template_item.contour_item
+        template_image = self.plantilla.image_item
+        template_contour = self.plantilla.contour_item
 
         if template_image is None:
             return
@@ -100,6 +99,7 @@ class PlantillaController:
             new_image.setFlag(QGraphicsItem.ItemIsSelectable, True)
 
             self._scene.addItem(new_image)
+            self.image_ctrl._images.append(new_image)
 
 
     def rotar_vector(self, v: QPointF, angulo_deg: float) -> QPointF:
@@ -108,4 +108,17 @@ class PlantillaController:
         x = v.x() * cos_a - v.y() * sin_a
         y = v.x() * sin_a + v.y() * cos_a
         return QPointF(x, y)
+    
+    def clear(self) -> None:
+        if self.plantilla is not None and self.plantilla.scene() is not None:
+            self._scene.removeItem(self.plantilla)
+        self.plantilla = None
+
+        # resetear offsets
+        self.angle_off_set = None
+        self.pos_off_set = None
+
+    def _on_scan_table_changed(self, scan_ctrl: ScanTableController) -> None:
+        """Se llama cuando cambia el background/scan table: limpia todo para evitar desalineaciones."""
+        self.clear()
 

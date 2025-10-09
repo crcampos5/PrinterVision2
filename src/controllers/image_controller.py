@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 from pathlib import Path
+from typing import List
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QPixmap, QTransform
@@ -22,7 +23,7 @@ class ImageController(QObject):
         self._item = ImageItem()
         self._item.controller = self
         self._scene: QGraphicsScene | None = None
-
+        self._images: List[ImageItem] = []
         self._item.setZValue(100.0)
         self._target_mmpp_x: float | None = None
         self._target_mmpp_y: float | None = None
@@ -43,11 +44,6 @@ class ImageController(QObject):
             p_scene  = self._item.scenePos()      # pos del (0,0) local en escena
             c_scene  = self._item.mapToScene(self._item.boundingRect().center())  # centro en escena
 
-            print(f"Rotación: {rot:.2f}°")
-            print(f"Posición (parent): x={p_parent.x():.3f}, y={p_parent.y():.3f}")
-            print(f"Posición (scene 0,0): x={p_scene.x():.3f}, y={p_scene.y():.3f}")
-            print(f"Centro (scene): x={c_scene.x():.3f}, y={c_scene.y():.3f}")
-
 
     def attach_to_scene(self, scene: QGraphicsScene | None) -> None:
         if self._scene is scene:
@@ -67,6 +63,21 @@ class ImageController(QObject):
             self._scene.addItem(self._item)
         self.state_changed.emit()
         return ok
+    
+    def connect_scan_table(self, scan_ctrl) -> None:
+        """
+        Conectar a la señal state_changed de ScanTableController.
+        scan_ctrl debe exponer background_np() o un atributo ._model.scan_table_image
+        """
+        scan_ctrl.state_changed.connect(lambda: self._on_scan_table_changed(scan_ctrl))
+
+    # --- Reacción ante cambios del background ---
+    def _on_scan_table_changed(self, scan_ctrl) -> None:
+        print("entra")
+        if self._scene is None:
+            return
+        self.clear()
+        
 
     def clear(self) -> None:
         self._model.clear()
@@ -74,6 +85,10 @@ class ImageController(QObject):
         sc = self._item.scene()
         if sc is not None:
             sc.removeItem(self._item)
+            for it in self._images:
+                if it.scene() is sc:
+                    sc.removeItem(it)
+        self._images.clear()          
         self.state_changed.emit()
 
     def refresh(self) -> None:
