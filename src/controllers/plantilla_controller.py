@@ -122,3 +122,5 @@ class PlantillaController:
         """Se llama cuando cambia el background/scan table: limpia todo para evitar desalineaciones."""
         self.clear()
 
+    
+

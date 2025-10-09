@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from shiboken6 import isValid
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QEvent, Qt
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
@@ -52,6 +52,8 @@ class SelectionHandler(QObject):
         scene.selectionChanged.connect(self.on_selection_changed)
 
     def on_selection_changed(self):
+        if (self._scene is None) or (not isValid(self._scene)):
+            return
         items = self._scene.selectedItems()
         # Clasificamos
         self.selected_images = [it for it in items if isinstance(it, ImageItem)]

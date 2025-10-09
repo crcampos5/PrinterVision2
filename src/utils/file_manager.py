@@ -208,6 +208,51 @@ def to_rgba8_preview(
 
     return None
 
+def save_result(
+    path: Path,
+    image: np.ndarray,
+    photometric: str | None = None,
+    dpi_x: float | None = None,
+    dpi_y: float | None = None,
+    icc_profile: bytes | None = None,
+    ink_names: list[str] | None = None,
+    extrasamples: list[int] | None = None,
+    number_of_inks: int | None = None,
+    inkset: int | None = None,  # 1 = CMYK
+) -> bool:
+    try:
+        kws = {
+            "append": False,     # <- NO anexar páginas
+            "bigtiff": False,    # opcional
+            "imagej": False,     # opcional
+        }
+        if photometric:
+            kws["photometric"] = photometric  # 'rgb' | 'minisblack' | 'separated'
+        if dpi_x and dpi_y:
+            kws["resolution"] = (float(dpi_x), float(dpi_y))
+            kws["resolutionunit"] = "INCH"
+        if icc_profile:
+            kws["iccprofile"] = icc_profile
+
+        extratags = []
+        # InkNames (id 333), NumberOfInks (id 334), InkSet (id 332)
+        if ink_names:
+            payload = ("\x00".join(ink_names) + "\x00").encode("latin1")
+            extratags.append((333, "B", len(payload), payload, True))
+        if number_of_inks is not None:
+            extratags.append((334, "H", 1, number_of_inks, True))
+        if inkset is not None:
+            extratags.append((332, "H", 1, inkset, True))
+        # ExtraSamples (id 338) SOLO si realmente es alfa
+        if extrasamples:
+            extratags.append((338, "H", len(extrasamples), extrasamples, True))
+        if extratags:
+            kws["extratags"] = extratags
+
+        tifffile.imwrite(str(path), image, **kws)
+        return True
+    except Exception:
+        return False
 
 # --- Helpers internos mínimos (privados al módulo) ---
 

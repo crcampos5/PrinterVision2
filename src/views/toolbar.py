@@ -116,12 +116,13 @@ class MainToolBar(QToolBar):
             self._update_status()
 
     def save_result(self) -> None:
-        if not self.document.has_output:
+        if not self.image_ctrl.has_output:
             QMessageBox.information(self, "Sin resultado", "Genera un resultado antes de guardar.")
             return
         default_name = "resultado.tif"
-        if self.document.tile_path is not None:
-            default_name = f"{self.document.tile_path.stem}_sobre_centroides.tif"
+        image_path = self.image_ctrl._model._image_path
+        if image_path is not None:
+            default_name = f"{image_path.stem}_clonado.tif"
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Guardar imagen resultante",
@@ -131,10 +132,10 @@ class MainToolBar(QToolBar):
         if not file_path:
             return
         path = Path(file_path)
-        if not self.document.save_output(path):
+        if not self.image_ctrl.save_output(path):
             QMessageBox.warning(self, "Error", "No se pudo guardar la imagen resultante.")
             return
-        self.statusBar().showMessage(f"Imagen guardada en: {path}")
+        self.main_window.statusBar().showMessage(f"Imagen guardada en: {path}")
 
     def create_template(self) -> None:
         ctn = self.sel_handler.selected_contours[0]

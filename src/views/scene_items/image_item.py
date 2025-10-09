@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsSceneWheelEvent
+from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsSceneWheelEvent, QGraphicsItem
 
 
 class ImageItem(QGraphicsPixmapItem):
@@ -13,18 +13,21 @@ class ImageItem(QGraphicsPixmapItem):
     def __init__(self, pixmap: QPixmap | None = None) -> None:
         super().__init__()
         self.controller = None
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
         if pixmap is not None:
             self.setPixmap(pixmap)
 
     def set_image_pixmap(self, pixmap: QPixmap | None) -> None:
         """Assign ``pixmap`` to the item, clearing it when ``None``."""
-
         if pixmap is None or pixmap.isNull():
             self.setPixmap(QPixmap())
             return
         self.setPixmap(pixmap)
 
     def on_selected(self):
+        if self.controller is None :
+            return
         self.controller.on_selection_changed()
 
     def wheelEvent(self, event: QGraphicsSceneWheelEvent) -> None:

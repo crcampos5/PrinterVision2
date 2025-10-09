@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
 
         
         self.ctrl_scan_table = ScanTableController(self)
-        self.ctrl_image = ImageController(self)
+        self.ctrl_image = ImageController(self, self.ctrl_scan_table)
         self.ctrl_contours = ContourController(self)
         self.ctrl_plantilla = PlantillaController(self.viewer._scene, self.ctrl_contours, self.ctrl_image)
 
@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
     def _update_actions_state(self, state_sel: int | None = 0) -> None:
         """Actualiza el estado de los botones del toolbar según el estado actual."""
         has_bg = self.ctrl_scan_table._model.has_background()
-        has_output = bool(self.document and self.document.has_output)
+        has_output = bool(self.ctrl_image and self.ctrl_image.has_output)
 
         self.toolbar.load_tif_action.setEnabled(has_bg)
         self.toolbar.save_action.setEnabled(has_output)
