@@ -1,6 +1,8 @@
 """File-system helpers for image handling."""
 
 from __future__ import annotations
+from pathlib import Path
+import sys
 from typing import Optional
 
 def _rational_to_float(value: object) -> Optional[float]:
@@ -37,3 +39,8 @@ def _compute_size_mm(shape: tuple[int, ...], dpi_x: Optional[float], dpi_y: Opti
     width_mm = (width_px / dpi_x * 25.4) if dpi_x else None
     height_mm = (height_px / dpi_y * 25.4) if dpi_y else None
     return width_mm, height_mm
+
+def resource_path(relative_path: str) -> Path:
+    """Obtiene la ruta válida tanto en desarrollo como en ejecutable."""
+    base_path = getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)
+    return Path(base_path) / relative_path

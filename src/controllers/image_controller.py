@@ -213,15 +213,18 @@ class ImageController(QObject):
        
     def generate_output(self) -> np.ndarray:
         """
-        Versión reducida de prueba con rotación expandida:
-        - Crea el canvas según workspace_mm y DPI.
-        - Pega SOLO la imagen base (self._model.pixels) en cada posición de self._images,
-        rotando la base según item.rotation() y expandiendo el lienzo de la imagen rotada
-        para evitar el “corte cuadrado”.
-        - Sin máscaras. Clipping a bordes. Mantiene CMYK.
+        Composición por superposición (MAX por canal):
+        - Crea el canvas (mm -> px) según workspace y DPI.
+        - Para cada item (self._item y self._images):
+            * Calcula su centro en escena -> coordenadas de canvas.
+            * Rota la imagen base expandiendo el lienzo para evitar cortes.
+            * Pega al canvas usando composición por máximo por canal (no borra tinta previa).
+        - Sin máscaras ni conversiones. Mantiene dtype y número de canales del modelo.
         """
         import cv2, math
-        img = self._model.pixels  # Esperado: H x W x C (CMYK o CMYK+extras)
+        import numpy as np
+
+        img = self._model.pixels  # H x W x C (CMYK o similar) o H x W
         if img is None:
             raise ValueError("ImageModel.pixels es None")
 
@@ -236,7 +239,7 @@ class ImageController(QObject):
         dtype = img.dtype
         if img.ndim == 3:
             channels = img.shape[2]
-            canvas = np.zeros((height_px, width_px, channels), dtype=dtype)  # CMYK blanco = 0s
+            canvas = np.zeros((height_px, width_px, channels), dtype=dtype)  # CMYK blanco = 0
         elif img.ndim == 2:
             canvas = np.zeros((height_px, width_px), dtype=dtype)
         else:
@@ -245,35 +248,34 @@ class ImageController(QObject):
         Hc, Wc = canvas.shape[:2]
         Hi, Wi = img.shape[:2]
 
-        # Centro original de la imagen base
+        # Centro de la imagen base (para rotación)
         cx_img = (Wi - 1) / 2.0
         cy_img = (Hi - 1) / 2.0
 
-        # --- Combinar item principal + clones ---
-        items = [self._item] + list(self._images)
+        # --- Lista de items: principal + clones (ignorando None) ---
+        items = [x for x in ([getattr(self, "_item", None)] + list(getattr(self, "_images", []))) if x is not None]
 
         for item in items:
-            # Centro del item en escena -> píxeles del canvas
+            # Centro del item en escena -> píxeles del canvas (usando escalas del modelo)
             center_scene = item.mapToScene(item.boundingRect().center())
             csx, csy = center_scene.x(), center_scene.y()
             pos_x = int(round(csx / self._model.scale_sx))
             pos_y = int(round(csy / self._model.scale_sy))
 
-            # ----- ROTACIÓN (expandida para no recortar) -----
+            # ----- ROTACIÓN expandida (evita recortes) -----
             angle_deg = float(item.rotation())
             M = cv2.getRotationMatrix2D((cx_img, cy_img), -angle_deg, 1.0)
 
-            # Calcular tamaño expandido usando la matriz M (método estándar OpenCV)
             cos_a = abs(M[0, 0])
             sin_a = abs(M[0, 1])
             newW = int(math.ceil(Hi * sin_a + Wi * cos_a))
             newH = int(math.ceil(Hi * cos_a + Wi * sin_a))
 
-            # Ajustar traslación para centrar el contenido en el nuevo tamaño
+            # Recentrar en el nuevo tamaño
             M[0, 2] += (newW / 2.0) - cx_img
             M[1, 2] += (newH / 2.0) - cy_img
 
-            # Rotar canal por canal (soporta >4 canales)
+            # Rotar canal por canal (soporta C>4)
             if img.ndim == 3:
                 img_rot = np.zeros((newH, newW, img.shape[2]), dtype=img.dtype)
                 for c in range(img.shape[2]):
@@ -281,7 +283,7 @@ class ImageController(QObject):
                         img[:, :, c], M, (newW, newH),
                         flags=cv2.INTER_LINEAR,
                         borderMode=cv2.BORDER_CONSTANT,
-                        borderValue=0  # CMYK blanco/“sin tinta”
+                        borderValue=0  # 0 = sin tinta
                     )
             else:
                 img_rot = cv2.warpAffine(
@@ -290,9 +292,8 @@ class ImageController(QObject):
                     borderMode=cv2.BORDER_CONSTANT,
                     borderValue=0
                 )
-            # -----------------------------------------------
 
-            # Tamaño real de la imagen rotada
+            # Tamaño del parche rotado
             Hi_r, Wi_r = img_rot.shape[:2]
 
             # ----- Posicionamiento centrado y clipping -----
@@ -303,19 +304,29 @@ class ImageController(QObject):
 
             x0c = max(0, x0); y0c = max(0, y0)
             x1c = min(Wc, x1); y1c = min(Hc, y1)
-
             if x1c <= x0c or y1c <= y0c:
-                continue  # No hay intersección visible
+                continue  # Fuera del canvas
 
             ix0 = x0c - x0
             iy0 = y0c - y0
             ix1 = ix0 + (x1c - x0c)
             iy1 = iy0 + (y1c - y0c)
 
-            # Copia directa (sin máscaras ni conversiones)
-            if img_rot.ndim == 3:
-                canvas[y0c:y1c, x0c:x1c, :img_rot.shape[2]] = img_rot[iy0:iy1, ix0:ix1, :]
+            # ----- Composición por máximo (superposición) -----
+            dst = canvas[y0c:y1c, x0c:x1c]
+            src = img_rot[iy0:iy1, ix0:ix1]
+
+            # Alinear dimensiones para operar por canal
+            if dst.ndim == 3 and src.ndim == 2:
+                src = src[..., None]
+            if dst.ndim == 3 and src.shape[2] < dst.shape[2]:
+                # Mezcla solo los canales presentes en src
+                dst_slice = dst[:, :, :src.shape[2]]
             else:
-                canvas[y0c:y1c, x0c:x1c] = img_rot[iy0:iy1, ix0:ix1]
+                dst_slice = dst
+
+            # MAX por canal: evita que ceros del parche borren tinta previa
+            np.maximum(dst_slice, src, out=dst_slice)
 
         return canvas
+

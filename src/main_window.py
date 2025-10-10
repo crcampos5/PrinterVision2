@@ -5,23 +5,28 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QDialog
 
 from controllers.contour_controller import ContourController
 from controllers.image_controller import ImageController
 from controllers.scan_table_controller import ScanTableController
 from controllers.plantilla_controller import PlantillaController
+from utils.tools import resource_path
 from views.editor_viewer import EditorViewer
 from views.toolbar import MainToolBar
 from controllers.selection_handler import SelectionHandler
 
+ICONS_DIR = resource_path("icons")
 
 class MainWindow(QMainWindow):
     """Application main window with top toolbar."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("PrinterVision Editor")
+        self.setWindowTitle("PrinterVision v1.0")
+        icon_path = ICONS_DIR / "icono.png"   # tu archivo .ico o .png
+        self.setWindowIcon(QIcon(str(icon_path)))
         self.resize(1200, 800)
         # Central canvas that handles zooming, panning, and rotation.
         self.viewer = EditorViewer(self)

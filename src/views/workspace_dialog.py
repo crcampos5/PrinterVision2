@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from utils.workspace_config import load_workspace
+
 
 class WorkspaceDialog(QDialog):
     """Allow the user to edit the workspace dimensions in millimeters."""
@@ -18,18 +20,18 @@ class WorkspaceDialog(QDialog):
     def __init__(self, parent=None, width_mm: float = 480.0, height_mm: float = 600.0) -> None:
         super().__init__(parent)
         self.setWindowTitle("Parametros de trabajo")
-
+        ws = load_workspace()
         self.width_spin = QDoubleSpinBox(self)
         self.width_spin.setSuffix(" mm")
         self.width_spin.setDecimals(2)
         self.width_spin.setRange(10.0, 5000.0)
-        self.width_spin.setValue(width_mm)
+        self.width_spin.setValue(ws["width_mm"])
 
         self.height_spin = QDoubleSpinBox(self)
         self.height_spin.setSuffix(" mm")
         self.height_spin.setDecimals(2)
         self.height_spin.setRange(10.0, 5000.0)
-        self.height_spin.setValue(height_mm)
+        self.height_spin.setValue(ws["height_mm"])
 
         form = QFormLayout()
         form.addRow("Ancho de la mesa", self.width_spin)

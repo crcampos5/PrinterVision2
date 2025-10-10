@@ -9,6 +9,7 @@ import numpy as np
 from PySide6.QtGui import QPixmap
 
 from utils.file_manager import load_scan_table
+from utils.workspace_config import load_workspace
 
 
 class ScanTableModel:
@@ -24,8 +25,9 @@ class ScanTableModel:
         self.scan_table_pixmap: Optional[QPixmap] = None
 
         # Área de trabajo en milímetros (configurable)
-        self.workspace_width_mm: float = 480.0
-        self.workspace_height_mm: float = 600.0
+        ws = load_workspace()
+        self.workspace_width_mm: float = ws["width_mm"]
+        self.workspace_height_mm: float = ws["height_mm"]
 
         # Escala en milímetros por pixel (x, y)
         self.mm_per_pixel_x: Optional[float] = None

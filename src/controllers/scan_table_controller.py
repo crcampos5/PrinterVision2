@@ -7,6 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QObject, Signal
 from models.scan_table_model import ScanTableModel
+from utils.workspace_config import save_workspace
 from views.scene_items import ScanTableItem
 
 
@@ -88,6 +89,7 @@ class ScanTableController(QObject):
 
     def update_workspace(self, width_mm: float, height_mm: float) -> None:
         """Update workspace dimensions and regenerate output if needed."""
+        save_workspace({"width_mm": width_mm, "height_mm": height_mm})
         self._model.workspace_width_mm = width_mm
         self._model.workspace_height_mm = height_mm
         self._model._recompute_mm_per_pixel()

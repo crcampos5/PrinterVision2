@@ -4,20 +4,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from pathlib import Path
+import sys
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
 from controllers.image_controller import ImageController
 from controllers.plantilla_controller import PlantillaController
 from controllers.scan_table_controller import ScanTableController
 from controllers.selection_handler import SelectionHandler
+from utils.tools import resource_path
 from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from ..main_window import MainWindow
 
 
-ICONS_DIR = Path(__file__).resolve().parent.parent / "icons"
 
+ICONS_DIR = resource_path("icons")
 
 class MainToolBar(QToolBar):
     """Toolbar housing the primary window actions."""
@@ -33,6 +36,8 @@ class MainToolBar(QToolBar):
         self.plantilla_ctrl = plantilla_ctrl
         self.sel_handler: SelectionHandler = None
         self.setMovable(False)
+
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.settings_action = QAction(QIcon(str(ICONS_DIR / "settings.svg")), "Parametros", self)
         self.settings_action.triggered.connect(self.configure_workspace)
@@ -119,7 +124,7 @@ class MainToolBar(QToolBar):
             self.main_window._update_status()
 
     def save_result(self) -> None:
-        if not self.image_ctrl.has_output:
+        if not self.image_ctrl.has_output():
             QMessageBox.information(self, "Sin resultado", "Genera un resultado antes de guardar.")
             return
         default_name = "resultado.tif"
