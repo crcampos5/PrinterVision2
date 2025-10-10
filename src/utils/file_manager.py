@@ -10,15 +10,11 @@ import cv2
 import numpy as np
 import tifffile
 
-from .io import (
+from .tools import (
     _rational_to_float,
     _apply_resolution_unit,
     _compute_size_mm,
 )
-from .io import load_image_data  # existente, no se toca
-
-if TYPE_CHECKING:  # pragma: no cover
-    from .io import ImageData
 
 
 def load_scan_table(path: Path) -> np.ndarray:

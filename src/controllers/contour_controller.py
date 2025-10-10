@@ -73,7 +73,6 @@ class ContourController(QObject):
 
         cnts, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = [c for c in cnts if cv2.contourArea(c) >= self._min_area]
-        print("detecto: ", len(cnts))
         items: List[ContourItem] = []
         for c in cnts:
             # Se asume que ContourItem expone un helper de construcción desde cv-contour
@@ -107,12 +106,7 @@ class ContourController(QObject):
             c_scene  = item.mapToScene(item.boundingRect().center())  # centro en escena
             angle = item.model.angle_o
             dic = item.model.direccion
-            print(f"Contorno")
-            print(f"Direccion: {dic}")
-            print(f"Angulo: {angle:.2f}°")
-            #print(f"Posición (parent): x={p_parent.x():.3f}, y={p_parent.y():.3f}")
-            #print(f"Posición (scene 0,0): x={p_scene.x():.3f}, y={p_scene.y():.3f}")
-            #print(f"Centro (scene): x={c_scene.x():.3f}, y={c_scene.y():.3f}")
+           
 
     # --- API mínima pública ---
     def items(self) -> List[ContourItem]:

@@ -6,9 +6,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QWheelEvent, QPixmap, QPainter
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsScene, QGraphicsView
 
-from utils.qt import numpy_to_qpixmap
-
-
 class EditorViewer(QGraphicsView):
     """QGraphicsView configured for smooth zooming, panning, and rotation."""
 

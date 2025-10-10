@@ -42,21 +42,24 @@ class ImageController(QObject):
     def model(self) -> ImageModel:
         return self._model
     
-    @property
+    
     def has_output(self) -> bool:
         item_ok = False
 
         if (self._item is not None) and isValid(self._item):
-            item_ok = True
-
-            pixmap = getattr(self._item, "_pixmap", None)
+            
+            pixmap = self._item.pixmap()
             if isinstance(pixmap, QPixmap) and not pixmap.isNull():
                 item_ok = True
 
         images_ok = any(
-            (isValid(img) and getattr(img, "_pixmap", None) is not None and not getattr(img, "_pixmap").isNull())
-            for img in self._images
+        (
+            isValid(img)
+            and isinstance(img.pixmap(), QPixmap)
+            and not img.pixmap().isNull()
         )
+        for img in self._images
+    )
 
         return item_ok or images_ok
     

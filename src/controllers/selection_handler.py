@@ -76,7 +76,7 @@ class SelectionHandler(QObject):
         elif  n_templates == 1:
             estado_seleccion = 2
         else: pass
-            #print(f"👉 Selección múltiple (ImageItems={n_img}, Contours={n_contour}, Total={len(items)})")
+           
 
         self.selection_changed.emit(estado_seleccion)
         

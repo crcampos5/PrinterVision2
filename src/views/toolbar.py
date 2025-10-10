@@ -105,15 +105,15 @@ class MainToolBar(QToolBar):
     def configure_workspace(self) -> None:
         dialog = WorkspaceDialog(
             self,
-            width_mm=self.document.workspace_width_mm,
-            height_mm=self.document.workspace_height_mm,
+            width_mm=self.scan_table_ctrl._model.workspace_width_mm,
+            height_mm=self.scan_table_ctrl._model.workspace_height_mm,
         )
         if dialog.exec() == QDialog.Accepted:
             width_mm, height_mm = dialog.values()
-            self.document.update_workspace(width_mm, height_mm)
-            self._refresh_view()
-            self._update_actions_state()
-            self._update_status()
+            self.scan_table_ctrl.update_workspace(width_mm, height_mm)
+            self.main_window._refresh_view()
+            self.main_window._update_actions_state()
+            self.main_window._update_status()
 
     def save_result(self) -> None:
         if not self.image_ctrl.has_output:

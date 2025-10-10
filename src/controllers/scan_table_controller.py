@@ -6,7 +6,6 @@ from pathlib import Path
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QObject, Signal
-from utils.detection import detect_centroids, draw_centroids_overlay
 from models.scan_table_model import ScanTableModel
 from views.scene_items import ScanTableItem
 
@@ -86,6 +85,13 @@ class ScanTableController(QObject):
         self._item.set_background_pixmap(pixmap)
         if self._scene is not None and self._item.scene() is None:
             self._scene.addItem(self._item)
+
+    def update_workspace(self, width_mm: float, height_mm: float) -> None:
+        """Update workspace dimensions and regenerate output if needed."""
+        self._model.workspace_width_mm = width_mm
+        self._model.workspace_height_mm = height_mm
+        self._model._recompute_mm_per_pixel()
+        
 
     
 
