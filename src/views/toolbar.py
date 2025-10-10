@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from pathlib import Path
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QToolBar, QFileDialog, QMessageBox, QDialog
 from controllers.image_controller import ImageController
 from controllers.plantilla_controller import PlantillaController
@@ -14,6 +14,9 @@ from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from ..main_window import MainWindow
+
+
+ICONS_DIR = Path(__file__).resolve().parent.parent / "icons"
 
 
 class MainToolBar(QToolBar):
@@ -31,28 +34,28 @@ class MainToolBar(QToolBar):
         self.sel_handler: SelectionHandler = None
         self.setMovable(False)
 
-        self.settings_action = QAction("Parametros", self)
+        self.settings_action = QAction(QIcon(str(ICONS_DIR / "settings.svg")), "Parametros", self)
         self.settings_action.triggered.connect(self.configure_workspace)
         self.addAction(self.settings_action)
 
-        self.open_action = QAction("Cargar Tabla Escaneo", self)
+        self.open_action = QAction(QIcon(str(ICONS_DIR / "open.svg")), "Cargar Tabla Escaneo", self)
         self.open_action.triggered.connect(self.open_scan_table)
         self.addAction(self.open_action)
 
-        self.load_tif_action = QAction("Cargar Imagen", self)
+        self.load_tif_action = QAction(QIcon(str(ICONS_DIR / "add-image.svg")), "Cargar Imagen", self)
         self.load_tif_action.triggered.connect(self.load_image_item)
         self.addAction(self.load_tif_action)
 
-        self.save_action = QAction("Guardar resultado", self)
+        self.save_action = QAction(QIcon(str(ICONS_DIR / "save.svg")), "Guardar resultado", self)
         self.save_action.triggered.connect(self.save_result)
         self.addAction(self.save_action)
 
-        self.create_template_action = QAction("Crear Plantilla", self)
+        self.create_template_action = QAction(QIcon(str(ICONS_DIR / "template-add.svg")), "Crear Plantilla", self)
         self.create_template_action.setEnabled(False)
         self.create_template_action.triggered.connect(self.create_template)
         self.addAction(self.create_template_action)
 
-        self.clone_template_action = QAction("Clonar Plantilla", self)
+        self.clone_template_action = QAction(QIcon(str(ICONS_DIR / "template-apply-all.svg")), "Clonar Plantilla", self)
         self.clone_template_action.setEnabled(False)
         self.clone_template_action.triggered.connect(self.clone_template)
         self.addAction(self.clone_template_action)
@@ -140,7 +143,7 @@ class MainToolBar(QToolBar):
     def create_template(self) -> None:
         ctn = self.sel_handler.selected_contours[0]
         img = self.sel_handler.selected_images[0]
-        plantilla_item = self.plantilla_ctrl.create(img,ctn)
+        plantilla_item = self.plantilla_ctrl.create(img, ctn)
     
     def clone_template(self) -> None:
         self.plantilla_ctrl.apply_template()
