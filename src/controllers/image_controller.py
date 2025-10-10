@@ -161,15 +161,6 @@ class ImageController(QObject):
         img = self.generate_output()
         dpi_x = self._model.dpi_x
         dpi_y = self._model.dpi_y
-#
-        #dtype = img.dtype
-        #channels = (img.shape[2] if img.ndim == 3 else 1)
-#
-        #width_px = self.ctrl_table._model.workspace_width_mm * dpi_x / 25.4
-        #height_px = self.ctrl_table._model.workspace_height_mm * dpi_y / 25.4
-        #white = 0
-        #canvas = (np.full((height_px, width_px, channels), white, dtype=dtype)
-        #        if channels > 1 else np.full((height_px, width_px), white, dtype=dtype))
 
         # Photometric según canales
         if img.ndim == 2 or (img.ndim == 3 and img.shape[2] == 1):
@@ -216,95 +207,112 @@ class ImageController(QObject):
             number_of_inks=number_of_inks,
             inkset=inkset,
         )
-    
+       
     def generate_output(self) -> np.ndarray:
+        """
+        Versión reducida de prueba con rotación expandida:
+        - Crea el canvas según workspace_mm y DPI.
+        - Pega SOLO la imagen base (self._model.pixels) en cada posición de self._images,
+        rotando la base según item.rotation() y expandiendo el lienzo de la imagen rotada
+        para evitar el “corte cuadrado”.
+        - Sin máscaras. Clipping a bordes. Mantiene CMYK.
+        """
+        import cv2, math
+        img = self._model.pixels  # Esperado: H x W x C (CMYK o CMYK+extras)
+        if img is None:
+            raise ValueError("ImageModel.pixels es None")
 
-        img = self._model.pixels
-        dpi_x = self._model.dpi_x
-        dpi_y = self._model.dpi_y
+        # --- Canvas en píxeles (mm -> px) ---
+        dpi_x = float(self._model.dpi_x)
+        dpi_y = float(self._model.dpi_y)
+        width_px  = int(round(self.ctrl_table._model.workspace_width_mm  * dpi_x / 25.4))
+        height_px = int(round(self.ctrl_table._model.workspace_height_mm * dpi_y / 25.4))
+        if width_px <= 0 or height_px <= 0:
+            raise ValueError(f"Tamaño de canvas inválido: {width_px}x{height_px}")
 
         dtype = img.dtype
-        channels = (img.shape[2] if img.ndim == 3 else 1)
+        if img.ndim == 3:
+            channels = img.shape[2]
+            canvas = np.zeros((height_px, width_px, channels), dtype=dtype)  # CMYK blanco = 0s
+        elif img.ndim == 2:
+            canvas = np.zeros((height_px, width_px), dtype=dtype)
+        else:
+            raise ValueError(f"Forma de imagen no soportada: {img.shape}")
 
-        width_px = int(round(self.ctrl_table._model.workspace_width_mm * dpi_x / 25.4))
-        height_px = int(round(self.ctrl_table._model.workspace_height_mm * dpi_y / 25.4))
-        white = 0
-        canvas = (np.full((height_px, width_px, channels), white, dtype=dtype)
-                if channels > 1 else np.full((height_px, width_px), white, dtype=dtype))
-        
-        for item in self._images:
+        Hc, Wc = canvas.shape[:2]
+        Hi, Wi = img.shape[:2]
+
+        # Centro original de la imagen base
+        cx_img = (Wi - 1) / 2.0
+        cy_img = (Hi - 1) / 2.0
+
+        # --- Combinar item principal + clones ---
+        items = [self._item] + list(self._images)
+
+        for item in items:
+            # Centro del item en escena -> píxeles del canvas
             center_scene = item.mapToScene(item.boundingRect().center())
             csx, csy = center_scene.x(), center_scene.y()
+            pos_x = int(round(csx / self._model.scale_sx))
+            pos_y = int(round(csy / self._model.scale_sy))
 
-            pos_x = csx / self._model.scale_sx
-            pos_y = csy / self._model.scale_sy
+            # ----- ROTACIÓN (expandida para no recortar) -----
+            angle_deg = float(item.rotation())
+            M = cv2.getRotationMatrix2D((cx_img, cy_img), -angle_deg, 1.0)
 
-            rot_final = item.rotation()
+            # Calcular tamaño expandido usando la matriz M (método estándar OpenCV)
+            cos_a = abs(M[0, 0])
+            sin_a = abs(M[0, 1])
+            newW = int(math.ceil(Hi * sin_a + Wi * cos_a))
+            newH = int(math.ceil(Hi * cos_a + Wi * sin_a))
 
-            # Ajusta canales para compatibilidad con canvas (permitimos 1 canal extra como alpha)
-            ch = img.shape[2]
-            if ch < channels:
-                img = np.concatenate([img, np.repeat(img[..., -1:], channels - ch, axis=2)], axis=2)
-                ch = channels
-            if ch > channels + 1:
-                img = img[..., :channels + 1]
-                ch = img.shape[2]
+            # Ajustar traslación para centrar el contenido en el nuevo tamaño
+            M[0, 2] += (newW / 2.0) - cx_img
+            M[1, 2] += (newH / 2.0) - cy_img
 
-            h, w = img.shape[:2]
-
-            M = cv2.getRotationMatrix2D((pos_x, pos_y), rot_final, 1)
-            cos = abs(M[0, 0]); sin = abs(M[0, 1])
-            new_w = int(round((h * sin) + (w * cos)))
-            new_h = int(round((h * cos) + (w * sin)))
-
-            M[0, 2] += (new_w / 2.0) - pos_x
-            M[1, 2] += (new_h / 2.0) - pos_y
-
-            if ch <= 4:
-                border_val = (white,) * ch
+            # Rotar canal por canal (soporta >4 canales)
+            if img.ndim == 3:
+                img_rot = np.zeros((newH, newW, img.shape[2]), dtype=img.dtype)
+                for c in range(img.shape[2]):
+                    img_rot[:, :, c] = cv2.warpAffine(
+                        img[:, :, c], M, (newW, newH),
+                        flags=cv2.INTER_LINEAR,
+                        borderMode=cv2.BORDER_CONSTANT,
+                        borderValue=0  # CMYK blanco/“sin tinta”
+                    )
             else:
-                border_val = white
+                img_rot = cv2.warpAffine(
+                    img, M, (newW, newH),
+                    flags=cv2.INTER_LINEAR,
+                    borderMode=cv2.BORDER_CONSTANT,
+                    borderValue=0
+                )
+            # -----------------------------------------------
 
-            warped = cv2.warpAffine(img, M, (new_w, new_h), flags=cv2.INTER_NEAREST, borderValue=border_val)
+            # Tamaño real de la imagen rotada
+            Hi_r, Wi_r = img_rot.shape[:2]
 
-            x0 = int(round(pos_x - new_w / 2.0))
-            y0 = int(round(pos_y - new_h / 2.0))
+            # ----- Posicionamiento centrado y clipping -----
+            x0 = int(round(pos_x - Wi_r / 2))
+            y0 = int(round(pos_y - Hi_r / 2))
+            x1 = x0 + Wi_r
+            y1 = y0 + Hi_r
 
-            if x0 >= canvas.shape[1] or y0 >= canvas.shape[0] or (x0 + new_w <= 0) or (y0 + new_h <= 0):
-                continue
+            x0c = max(0, x0); y0c = max(0, y0)
+            x1c = min(Wc, x1); y1c = min(Hc, y1)
 
-            xs = max(0, -x0); ys = max(0, -y0)
-            x0 = max(0, x0); y0 = max(0, y0)
-            x1 = min(x0 + new_w - xs, canvas.shape[1])
-            y1 = min(y0 + new_h - ys, canvas.shape[0])
-            if x1 <= x0 or y1 <= y0:
-                continue
+            if x1c <= x0c or y1c <= y0c:
+                continue  # No hay intersección visible
 
-            tile_slice = warped[ys:ys + (y1 - y0), xs:xs + (x1 - x0)]
-            region = canvas[y0:y1, x0:x1]
+            ix0 = x0c - x0
+            iy0 = y0c - y0
+            ix1 = ix0 + (x1c - x0c)
+            iy1 = iy0 + (y1c - y0c)
 
-             # Máscara: alpha extra si canales = canvas+1, si no ≠ white
-            has_extra_alpha = (tile_slice.ndim == 3 and tile_slice.shape[2] == (channels + 1))
-            if has_extra_alpha:
-                alpha = tile_slice[..., -1]
-                color = tile_slice[..., :channels]
-                mask = (alpha > 0)
-                region[mask] = color[mask]
+            # Copia directa (sin máscaras ni conversiones)
+            if img_rot.ndim == 3:
+                canvas[y0c:y1c, x0c:x1c, :img_rot.shape[2]] = img_rot[iy0:iy1, ix0:ix1, :]
             else:
-                if tile_slice.ndim == 3:
-                    # Ajuste de canales por seguridad
-                    if tile_slice.shape[2] > channels:
-                        tile_slice = tile_slice[..., :channels]
-                    elif tile_slice.shape[2] < channels:
-                        tile_slice = np.concatenate(
-                            [tile_slice, np.repeat(tile_slice[..., -1:], channels - tile_slice.shape[2], axis=2)], axis=2
-                        )
-                    mask = np.any(tile_slice != white, axis=2)
-                    region[mask] = tile_slice[mask]
-                else:
-                    mask = (tile_slice != white)
-                    region[mask] = tile_slice[mask]
-
-            canvas[y0:y1, x0:x1] = region
+                canvas[y0c:y1c, x0c:x1c] = img_rot[iy0:iy1, ix0:ix1]
 
         return canvas
