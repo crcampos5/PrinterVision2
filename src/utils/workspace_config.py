@@ -22,9 +22,13 @@ def load_workspace() -> dict:
             with path.open("r", encoding="utf-8") as f:
                 old = json.load(f)
             # Si el archivo viejo no tiene las nuevas claves, se reemplaza
-            if not all(k in old for k in cfg):
-                save_workspace(cfg)
-                return cfg
+            changed = False
+            for k, v in cfg.items():
+                if k not in old:
+                    old[k] = v
+                    changed = True
+            if changed:
+                save_workspace(old)
             return old
         except Exception:
             # Si hay error o formato viejo, lo reemplaza
