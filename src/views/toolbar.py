@@ -13,6 +13,7 @@ from controllers.plantilla_controller import PlantillaController
 from controllers.scan_table_controller import ScanTableController
 from controllers.selection_handler import SelectionHandler
 from utils.tools import resource_path
+from utils.workspace_config import load_workspace, save_workspace
 from views.workspace_dialog import WorkspaceDialog
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
@@ -66,10 +67,13 @@ class MainToolBar(QToolBar):
         self.addAction(self.clone_template_action)
 
     def open_scan_table(self) -> None:
+        cfg = load_workspace()
+        start_dir = Path(cfg.get("last_open_dir", str(Path.home())))
+
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Seleccionar imagen de tabla de escaneo",
-            str(Path.cwd()),
+            str(start_dir),
             "Imagenes JPG (*.jpg *.jpeg);;Todos los archivos (*.*)",
         )
         if not file_path:
@@ -131,10 +135,13 @@ class MainToolBar(QToolBar):
         image_path = self.image_ctrl._model._image_path
         if image_path is not None:
             default_name = f"{image_path.stem}_clonado.tif"
+        
+        cfg = load_workspace()
+        start_dir = Path(cfg.get("last_save_dir", str(Path.home())))
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Guardar imagen resultante",
-            str(Path.cwd() / default_name),
+            str(start_dir / default_name),
             "Imagenes TIF (*.tif *.TIF)",
         )
         if not file_path:
@@ -143,6 +150,9 @@ class MainToolBar(QToolBar):
         if not self.image_ctrl.save_output(path):
             QMessageBox.warning(self, "Error", "No se pudo guardar la imagen resultante.")
             return
+        path = Path(file_path)
+        cfg["last_save_dir"] = str(path.parent)
+        save_workspace(cfg)
         self.main_window.statusBar().showMessage(f"Imagen guardada en: {path}")
 
     def create_template(self) -> None:

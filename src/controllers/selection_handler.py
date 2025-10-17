@@ -81,5 +81,31 @@ class SelectionHandler(QObject):
         self.selection_changed.emit(estado_seleccion)
         
 
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # solo lo mínimo
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Delete:
+            if self._scene is None or not isValid(self._scene):
+                return False
+            for it in list(self._scene.selectedItems()):
+                if it is self._bg:
+                    continue
+                target = self._owner_for_deletion(it)  # 👈 clave
+                ctrl = getattr(target, "controller", None)
+                if ctrl and hasattr(ctrl, "delete_item"):
+                    ctrl.delete_item(target)
+                else:
+                    if target.scene() is self._scene:
+                        self._scene.removeItem(target)
+                # si borraste la plantilla, ya no intentes borrar sus hijos
+            self._scene.clearSelection()
+            return True
         return False
+
+
+    def _owner_for_deletion(self, item):
+        """Si el item está dentro de una Plantilla, devuelve la Plantilla; si no, devuelve el item."""
+        cur = item
+        while cur is not None and isValid(cur):
+            if isinstance(cur, PlantillaItem):
+                return cur
+            cur = cur.parentItem()
+        return item

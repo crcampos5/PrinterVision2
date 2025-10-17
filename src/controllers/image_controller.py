@@ -15,6 +15,7 @@ from controllers.scan_table_controller import ScanTableController
 from models.image_model import ImageModel
 from utils.file_manager import save_result
 from views.scene_items import ImageItem
+from views.scene_items.plantilla_item import PlantillaItem
 
 
 class ImageController(QObject):
@@ -103,21 +104,59 @@ class ImageController(QObject):
         if self._scene is None:
             return
         self.clear()
+
+    def delete_item(self, item):
+        parent = item.parentItem()
+        if parent is not None and isValid(parent) and isinstance(parent, PlantillaItem):
+            plc_ctrl = getattr(parent, "controller", None)
+            if plc_ctrl and hasattr(plc_ctrl, "delete_item"):
+                plc_ctrl.delete_item(parent)
+                return
+
+        sc = item.scene()
+        if sc is not None and item.scene() is sc:
+            sc.removeItem(item)
+        if item is self._item:
+            
+            self._model.clear()
+            self._item = ImageItem()
+            self._item.controller = self
+            self._item.setZValue(100.0)
+        else:
+            try:
+                self._images.remove(item)
+            except ValueError:
+                pass
+        self.state_changed.emit()
         
 
     def clear(self) -> None:
         self._model.clear()
-        self._item.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        self._item.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self._item.set_image_pixmap(None)
-        sc = self._item.scene()
-        if sc is not None:
-            sc.removeItem(self._item)
-            for it in self._images:
-                if it.scene() is sc:
-                    sc.removeItem(it)
-        self._images.clear()          
+
+        # principal
+        if self._item and isValid(self._item):
+            if self._item.parentItem():
+                self._item.setParentItem(None)
+            sc0 = self._item.scene()
+            if sc0 is not None:
+                sc0.removeItem(self._item)
+            self._item.set_image_pixmap(None)
+            self._item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+            self._item.setFlag(QGraphicsItem.ItemIsMovable, True)
+
+        # clones / imágenes adicionales
+        for it in list(self._images):
+            if not it or not isValid(it):
+                continue
+            if it.parentItem():
+                it.setParentItem(None)
+            sc_it = it.scene()
+            if sc_it is not None:
+                sc_it.removeItem(it)
+
+        self._images.clear()
         self.state_changed.emit()
+
 
     def refresh(self) -> None:
         self._sync_item_from_model()

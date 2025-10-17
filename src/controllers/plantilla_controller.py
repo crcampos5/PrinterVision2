@@ -2,8 +2,10 @@
 from __future__ import annotations
 import math
 
-from PySide6.QtCore import QPointF
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
+from PySide6.QtGui import QPen
+from shiboken6 import isValid
 
 from controllers.contour_controller import ContourController
 from controllers.image_controller import ImageController
@@ -26,6 +28,7 @@ class PlantillaController:
 
     def create(self, image_item: ImageItem, contour_item: ContourItem) -> PlantillaItem:
         self.plantilla = PlantillaItem(image_item=image_item, contour_item=contour_item)
+        self.plantilla.controller = self
         self._scene.addItem(self.plantilla)
 
         self.angle_off_set = 360 - contour_item.model.angle_o + image_item.rotation()
@@ -97,6 +100,7 @@ class PlantillaController:
                 new_image.setPos(QPointF(new_pos))
 
             new_image.setFlag(QGraphicsItem.ItemIsSelectable, True)
+            new_image.setFlag(QGraphicsItem.ItemIsMovable, True)
 
             self._scene.addItem(new_image)
             self.image_ctrl._images.append(new_image)
@@ -108,6 +112,42 @@ class PlantillaController:
         x = v.x() * cos_a - v.y() * sin_a
         y = v.x() * sin_a + v.y() * cos_a
         return QPointF(x, y)
+    
+    def delete_item(self, plantilla_item):
+        # Desintegrar: conservar hijos, quitar contenedor
+        sc = getattr(self, "_scene", None)
+        if not plantilla_item or sc is None:
+            return
+
+        img = getattr(plantilla_item, "image_item", None)
+        ctn = getattr(plantilla_item, "contour_item", None)
+
+        # Liberar hijos (sin tocar rotación/escala)
+        for child in (img, ctn):
+            if child:
+                p = child.mapToScene(0, 0)
+                child.setParentItem(None)
+                child.setPos(p)
+                if child.scene() is None:
+                    sc.addItem(child)
+                child.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                # ImageItem vuelve a ser movible
+                if isinstance(child, ImageItem):
+                    child.setFlag(QGraphicsItem.ItemIsMovable, True)
+
+        # Restaurar color del contorno (pen original)
+        if ctn:
+            ctn.setPen(QPen(Qt.red, 3, Qt.SolidLine))
+        # Quitar el contenedor
+        if plantilla_item.scene() is sc:
+            sc.removeItem(plantilla_item)
+
+        # Limpiar referencia interna si aplica
+        if getattr(self, "plantilla", None) is plantilla_item:
+            self.plantilla = None
+
+        self.angle_off_set = None
+        self.pos_off_set = None
     
     def clear(self) -> None:
         if self.plantilla is not None and self.plantilla.scene() is not None:

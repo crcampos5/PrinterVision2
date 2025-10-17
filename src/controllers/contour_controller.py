@@ -22,7 +22,7 @@ class ContourController(QObject):
         super().__init__(parent)
         self._scene: Optional[QGraphicsScene] = scene
         self._items: List[ContourItem] = []
-        self._min_area: float = 50.0  # píxeles^2; ajustable si se necesita
+        self._min_area: float = 5000.0  # píxeles^2; ajustable si se necesita
 
     # --- Wiring desde MainWindow ---
     def attach_to_scene(self, scene: Optional[QGraphicsScene]) -> None:

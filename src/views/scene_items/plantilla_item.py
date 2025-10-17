@@ -13,6 +13,8 @@ class PlantillaItem(QGraphicsObject):
         self.image_item = image_item
         self.contour_item = contour_item
         self._show_bbox = False
+        self.controller = None
+        self.deletable = True
 
         # Parentar hijos al contenedor
         self.image_item.setParentItem(self)

@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("PrinterVision v1.0")
+        self.setWindowTitle("PrinterVision v1.1")
         icon_path = ICONS_DIR / "icono.png"   # tu archivo .ico o .png
         self.setWindowIcon(QIcon(str(icon_path)))
         self.resize(1200, 800)
@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
 
         self.selection.selection_changed.connect(self._update_actions_state)
         self.toolbar.sel_handler = self.selection
-
+        self.viewer.setFocus()
 
         self._update_actions_state()
         self._update_status()

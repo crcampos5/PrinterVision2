@@ -13,6 +13,7 @@ class EditorViewer(QGraphicsView):
         super().__init__(parent)
         self._scene = QGraphicsScene(self)
         self.setScene(self._scene)
+        self.setFocusPolicy(Qt.StrongFocus)
         self._pixmap_item: QGraphicsPixmapItem | None = None
 
         self.setRenderHints(self.renderHints() | QPainter.Antialiasing | QPainter.SmoothPixmapTransform)

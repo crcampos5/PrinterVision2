@@ -13,6 +13,7 @@ class ImageItem(QGraphicsPixmapItem):
     def __init__(self, pixmap: QPixmap | None = None) -> None:
         super().__init__()
         self.controller = None
+        self.deletable = True
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         if pixmap is not None:

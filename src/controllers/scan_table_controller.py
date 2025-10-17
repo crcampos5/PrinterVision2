@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import QObject, Signal
 from models.scan_table_model import ScanTableModel
-from utils.workspace_config import save_workspace
+from utils.workspace_config import load_workspace, save_workspace
 from views.scene_items import ScanTableItem
 
 
@@ -53,6 +53,11 @@ class ScanTableController(QObject):
         self._item.set_background_pixmap(pixmap)
         if self._scene is not None and self._item.scene() is None:
             self._scene.addItem(self._item)
+        
+        cfg = load_workspace()
+        cfg["last_open_dir"] = str(path.parent)
+        save_workspace(cfg)
+        
         self.state_changed.emit()
         return True
 
