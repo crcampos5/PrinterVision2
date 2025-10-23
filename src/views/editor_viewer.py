@@ -22,13 +22,23 @@ class EditorViewer(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
 
     def wheelEvent(self, event: QWheelEvent) -> None:  # noqa: N802 (Qt naming)
-        
+        dy = event.angleDelta().y()
         if event.modifiers() & Qt.ShiftModifier:
-            super().wheelEvent(event)
+            if dy == 0:
+                event.accept(); return
+            step = 1.0 if dy > 0 else -1.0
+
+            for it in self.scene().selectedItems():
+                if it.__class__.__name__ == "ImageItem":
+                    c = it.mapFromScene(it.sceneBoundingRect().center())
+                    it.setTransformOriginPoint(c)
+                    it.setRotation(it.rotation() + step)
+
+            event.accept()
             return
 
         # Zoom normal sin Shift
-        zoom = 1.25 if event.angleDelta().y() > 0 else 0.8
+        zoom = 1.25 if dy > 0 else 0.8
         self.scale(zoom, zoom)
         event.accept()
 

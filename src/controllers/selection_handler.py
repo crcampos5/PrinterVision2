@@ -92,6 +92,13 @@ class SelectionHandler(QObject):
                 ctrl = getattr(target, "controller", None)
                 if ctrl and hasattr(ctrl, "delete_item"):
                     ctrl.delete_item(target)
+                    
+                elif isinstance(target, ImageItem):
+                    # Fallback: usar el ImageController principal (self._img) para
+                    # que limpie self._images aunque el clon no tenga controller
+                    main_ctrl = getattr(self._img, "controller", None)
+                    if main_ctrl and hasattr(main_ctrl, "delete_item"):
+                        main_ctrl.delete_item(target)
                 else:
                     if target.scene() is self._scene:
                         self._scene.removeItem(target)

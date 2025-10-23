@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("PrinterVision v1.1")
+        self.setWindowTitle("PrinterVision v1.2")
         icon_path = ICONS_DIR / "icono.png"   # tu archivo .ico o .png
         self.setWindowIcon(QIcon(str(icon_path)))
         self.resize(1200, 800)
